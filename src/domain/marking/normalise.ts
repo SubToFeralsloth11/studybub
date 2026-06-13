@@ -43,3 +43,19 @@ export function normalise(raw: string, unit?: string): string {
 
   return value;
 }
+
+/**
+ * Normalises short-text answer input for tolerant comparison: Unicode-normalises,
+ * trims, collapses internal whitespace, case-folds, and strips combining diacritics.
+ *
+ * @param raw - The raw input string.
+ * @returns The normalised string (empty for whitespace-only input).
+ */
+export function normaliseShortText(raw: string): string {
+  return raw
+    .normalize("NFKD")
+    .replaceAll(/\p{Diacritic}/gu, "")
+    .trim()
+    .toLowerCase()
+    .replaceAll(/\s+/g, " ");
+}

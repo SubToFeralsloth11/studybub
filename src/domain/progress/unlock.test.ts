@@ -21,6 +21,7 @@ function lesson(order: number): Lesson {
 
 const track: Track = {
   id: "algebra",
+  subjectId: "maths",
   title: "Algebra",
   description: "d",
   lessons: [lesson(1), lesson(2), lesson(3)],

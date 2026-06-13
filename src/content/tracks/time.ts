@@ -180,6 +180,7 @@ const tellingTime: Lesson = {
 /** The Time track. */
 export const timeTrack: Track = {
   id: "time",
+  subjectId: "maths",
   title: "Time (Year 4)",
   description: "Units of time, and reading 12- and 24-hour clocks.",
   lessons: [unitsOfTime, tellingTime],

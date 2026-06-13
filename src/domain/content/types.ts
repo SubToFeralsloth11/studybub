@@ -1,16 +1,16 @@
 /**
- * Authored content types for MathBub.
+ * Authored content types for StudyBub.
  *
- * These describe the read-only learning material shipped with the app: tracks,
- * lessons, learn cards, the three question variants, figures, boss challenges and
- * badges. They are the contract authors write content against (see
- * contracts/contentModel.md) and that `validateContent` enforces invariants over.
+ * These describe the read-only learning material shipped with the app: subjects,
+ * tracks, lessons, learn cards, the six question variants, figures, boss
+ * challenges and badges. They are the contract authors write content against (see
+ * src/contracts/contentModel.md) and that `validateContent` enforces invariants over.
  *
  * @module domain/content/types
  */
 
 /** Stable slug identifying a track. */
-export type TrackId = "algebra" | "geometry" | "time";
+export type TrackId = string;
 
 /** Stable slug identifying a badge. */
 export type BadgeId = string;
@@ -43,6 +43,19 @@ export interface McqOption {
   id: string;
   /** Option content (supports typeset maths). */
   label: RichBlock[];
+}
+
+/** AI involvement marker on authored content. */
+export type AiRole = "generated" | "checked" | "both";
+
+/** Optional AI provenance marker for lessons and boss challenges. */
+export interface AiProvenance {
+  /** Name of the AI tool, e.g. "Claude", "ChatGPT". */
+  tool: string;
+  /** Source materials provided to the AI (filenames, URLs). */
+  sources: string[];
+  /** Whether the AI generated, checked, or both. */
+  role: AiRole;
 }
 
 /** Fields common to every question variant. */
@@ -86,8 +99,47 @@ export interface ExpressionQuestion extends QuestionBase {
   variables: string[];
 }
 
+/** A short-text question with case-insensitive accepted-answer matching. */
+export interface ShortTextQuestion extends QuestionBase {
+  type: "shortText";
+  /** One or more accepted answers, compared case-insensitively after normalisation. */
+  accepted: string[];
+}
+
+/** A fill-in-the-blank question with a gap in a sentence template. */
+export interface FillInTheBlankQuestion extends QuestionBase {
+  type: "fillInTheBlank";
+  /** Sentence parts with `___` marking the gap position. */
+  template: RichBlock[];
+  /** One or more accepted answers, compared case-insensitively after normalisation. */
+  accepted: string[];
+}
+
+/** A single left-right pair in a matching question. */
+export interface MatchingPair {
+  /** Unique id within the question. */
+  id: string;
+  /** Left-column content. */
+  left: RichBlock[];
+  /** Right-column content. */
+  right: RichBlock[];
+}
+
+/** A matching question where the learner pairs left and right items. */
+export interface MatchingQuestion extends QuestionBase {
+  type: "matching";
+  /** Pairs to match, each with left and right content. */
+  pairs: MatchingPair[];
+}
+
 /** The discriminated union of all question variants. */
-export type Question = McqQuestion | NumericQuestion | ExpressionQuestion;
+export type Question =
+  | McqQuestion
+  | NumericQuestion
+  | ExpressionQuestion
+  | ShortTextQuestion
+  | FillInTheBlankQuestion
+  | MatchingQuestion;
 
 /** A teaching snippet shown before practice. */
 export interface LearnCard {
@@ -119,6 +171,8 @@ export interface Lesson {
   mastery: Question[];
   /** Pass threshold as a fraction 0..1; defaults to 0.8 when omitted. */
   passThreshold?: number;
+  /** Optional AI provenance marker. */
+  aiProvenance?: AiProvenance;
 }
 
 /** An end-of-track practice-paper assessment. */
@@ -135,15 +189,33 @@ export interface BossChallenge {
   bonusXp: number;
   /** Badge granted for finishing the challenge. */
   passBadgeId: BadgeId;
+  /** Optional AI provenance marker. */
+  aiProvenance?: AiProvenance;
 }
 
-/** A top-level subject area. */
+/** A top-level subject area displayed on the home screen. */
+export interface Subject {
+  /** Stable slug, e.g. "maths", "science". */
+  id: string;
+  /** Display name, e.g. "Maths", "Science". */
+  title: string;
+  /** Short blurb, e.g. "Algebra, geometry, and more". */
+  description: string;
+  /** Single emoji, e.g. "🧮", "🔬". */
+  icon: string;
+  /** Hex colour, e.g. "#6D4AFF". */
+  accent: string;
+}
+
+/** A content track that belongs to a subject. */
 export interface Track {
-  /** Stable slug. */
+  /** Stable slug (now any string, not a fixed union). */
   id: TrackId;
+  /** The id of the subject this track belongs to. */
+  subjectId: string;
   /** Display name, e.g. "Algebra (Year 8)". */
   title: string;
-  /** Short blurb for the home card. */
+  /** Short blurb for the card. */
   description: string;
   /** Ordered lessons; `order` values run 1..n with no gaps. */
   lessons: Lesson[];
@@ -157,8 +229,8 @@ export type BadgeCriterion =
   | "perfect-mastery"
   | "streak-5"
   | "streak-7"
-  | `track-complete:${TrackId}`
-  | `boss-pass:${TrackId}`
+  | `track-complete:${string}`
+  | `boss-pass:${string}`
   | "all-tracks-complete";
 
 /** A milestone award definition. */
@@ -177,6 +249,8 @@ export interface Badge {
 
 /** The aggregate of all authored content the app ships with. */
 export interface AppContent {
+  /** All subjects in display order. */
+  subjects: Subject[];
   /** All tracks in display order. */
   tracks: Track[];
   /** All badge definitions. */

@@ -1,16 +1,24 @@
 /**
  * Aggregated authored content and lookups.
  *
- * This module assembles every track and badge into a single {@link AppContent}
- * value and exposes lookup helpers. In development it runs `validateContent` and
- * logs any structural problems so authoring mistakes surface immediately.
+ * This module assembles every subject, track, and badge into a single
+ * {@link AppContent} value and exposes lookup helpers. In development it runs
+ * `validateContent` and logs any structural problems so authoring mistakes
+ * surface immediately.
  *
  * @module content/index
  */
 
 import { badges } from "./badges";
+import { englishSubject } from "./subjects/english";
+import { germanSubject } from "./subjects/german";
+import { hassSubject } from "./subjects/hass";
+import { hpeSubject } from "./subjects/hpe";
+import { mathsSubject } from "./subjects/maths";
+import { scienceSubject } from "./subjects/science";
 import { algebraTrack } from "./tracks/algebra";
 import { geometryTrack } from "./tracks/geometry";
+import { scienceDemoTrack } from "./tracks/science-demo";
 import { timeTrack } from "./tracks/time";
 import { validateContent } from "../domain/content/validateContent";
 
@@ -19,15 +27,33 @@ import type {
   Badge,
   BossChallenge,
   Lesson,
+  Subject,
   Track,
-  TrackId,
 } from "../domain/content/types";
 
 /** The complete authored content shipped with the app. */
 export const appContent: AppContent = {
-  tracks: [algebraTrack, geometryTrack, timeTrack],
+  subjects: [
+    mathsSubject,
+    scienceSubject,
+    hassSubject,
+    englishSubject,
+    germanSubject,
+    hpeSubject,
+  ],
+  tracks: [algebraTrack, geometryTrack, timeTrack, scienceDemoTrack],
   badges,
 };
+
+/**
+ * Finds a subject by id.
+ *
+ * @param subjectId - The subject id to look up.
+ * @returns The subject, or undefined if not found.
+ */
+export function findSubject(subjectId: string): Subject | undefined {
+  return appContent.subjects.find((subject) => subject.id === subjectId);
+}
 
 /**
  * Finds a track by id.
@@ -73,13 +99,37 @@ export function findBadge(badgeId: string): Badge | undefined {
   return appContent.badges.find((badge) => badge.id === badgeId);
 }
 
+/**
+ * Returns all tracks belonging to a subject.
+ *
+ * @param subjectId - The subject id.
+ * @returns The tracks with that subjectId, in content order.
+ */
+export function tracksForSubject(subjectId: string): Track[] {
+  return appContent.tracks.filter((track) => track.subjectId === subjectId);
+}
+
+/**
+ * Finds the subject a track belongs to.
+ *
+ * @param trackId - The track id.
+ * @returns The subject, or undefined if the track is not found or has no subject.
+ */
+export function findSubjectForTrack(trackId: string): Subject | undefined {
+  const track = findTrack(trackId);
+  if (!track) return undefined;
+  return findSubject(track.subjectId);
+}
+
 /** The ordered list of track ids. */
-export const trackIds: TrackId[] = appContent.tracks.map((track) => track.id);
+export const trackIds: string[] = appContent.tracks.map((track) => track.id);
 
 // Surface authoring problems during development without blocking startup.
 if (import.meta.env?.DEV) {
   const issues = validateContent(appContent);
   if (issues.length > 0) {
-    console.error("MathBub content validation issues:\n" + issues.join("\n"));
+    console.error(
+      "StudyBub content validation issues:\n" + issues.join("\n"),
+    );
   }
 }

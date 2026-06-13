@@ -29,7 +29,7 @@ describe("ErrorBoundary", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText(/something popped/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /reload mathbub/i }),
+      screen.getByRole("button", { name: /reload studybub/i }),
     ).toBeInTheDocument();
   });
 });

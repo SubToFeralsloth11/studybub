@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CURRENT_VERSION,
   defaultState,
+  OLD_STORAGE_KEY,
   STORAGE_KEY,
   type SavedState,
 } from "./schema";
 import {
   loadProgress,
+  migrateProgress,
   resetProgress,
   saveProgress,
   type StorageLike,
@@ -114,5 +116,54 @@ describe("resetProgress", () => {
   it("returns a clean default even when clearing throws", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(resetProgress(throwingStorage())).toEqual(defaultState());
+  });
+});
+
+describe("migrateProgress", () => {
+  it("moves data from old key to new key", () => {
+    const storage = memoryStorage({
+      [OLD_STORAGE_KEY]: JSON.stringify(sample),
+    });
+    migrateProgress(storage);
+    const newData = storage.getItem(STORAGE_KEY);
+    expect(newData).not.toBeNull();
+    expect(JSON.parse(newData!)).toEqual(sample);
+  });
+
+  it("clears old key after successful migration", () => {
+    const storage = memoryStorage({
+      [OLD_STORAGE_KEY]: JSON.stringify(sample),
+    });
+    migrateProgress(storage);
+    expect(storage.getItem(OLD_STORAGE_KEY)).toBeNull();
+  });
+
+  it("prefers new key when both old and new keys exist", () => {
+    const newer: SavedState = { ...sample, xp: 999 };
+    const storage = memoryStorage({
+      [OLD_STORAGE_KEY]: JSON.stringify(sample),
+      [STORAGE_KEY]: JSON.stringify(newer),
+    });
+    migrateProgress(storage);
+    expect(storage.getItem(OLD_STORAGE_KEY)).toBeNull();
+    const newData = storage.getItem(STORAGE_KEY);
+    expect(JSON.parse(newData!)).toEqual(newer);
+  });
+
+  it("does not attempt migration when old key is absent", () => {
+    const storage = memoryStorage({
+      [STORAGE_KEY]: JSON.stringify(sample),
+    });
+    migrateProgress(storage);
+    expect(storage.getItem(OLD_STORAGE_KEY)).toBeNull();
+    expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toEqual(sample);
+  });
+
+  it("survives corrupt data in old key", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const storage = memoryStorage({
+      [OLD_STORAGE_KEY]: "{ not json",
+    });
+    expect(() => migrateProgress(storage)).not.toThrow();
   });
 });

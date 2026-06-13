@@ -8,6 +8,7 @@ import { renderApp } from "../../test/renderApp";
 import type { AppContent } from "../../domain/content/types";
 
 const content: AppContent = {
+  subjects: [],
   tracks: [],
   badges: [
     {

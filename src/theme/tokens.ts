@@ -1,5 +1,5 @@
 /**
- * Design tokens for MathBub, mirrored from the Tailwind theme in `index.css`.
+ * Design tokens for StudyBub, mirrored from the Tailwind theme in `index.css`.
  *
  * The CSS layer is the source of truth for styling; these constants exist so
  * non-CSS code (confetti colours, per-track theming, chart fills) can reference
@@ -8,9 +8,7 @@
  * @module theme/tokens
  */
 
-import type { TrackId } from "../domain/content/types";
-
-/** The core MathBub colour palette. */
+/** The core StudyBub colour palette. */
 export const palette = {
   /** Warm cream page background. */
   cream: "#FBF4EA",
@@ -28,12 +26,62 @@ export const palette = {
   warn: "#F2545B",
 } as const;
 
-/** Accent colours keyed by track, used to theme maps, cards and figures. */
-export const trackAccent: Record<TrackId, string> = {
+/** Deterministic palette for auto-generated accent colours. */
+const HASH_PALETTE = [
+  "#6D4AFF",
+  "#0FB6A8",
+  "#FF7A4D",
+  "#2ECC71",
+  "#E67E22",
+  "#3498DB",
+  "#E63946",
+  "#9B59B6",
+  "#1ABC9C",
+  "#F39C12",
+];
+
+/** Hardcoded accent colours for known tracks. */
+const knownAccents: Record<string, string> = {
   algebra: "#6D4AFF",
   geometry: "#0FB6A8",
   time: "#FF7A4D",
 };
+
+function hashTrackId(trackId: string): number {
+  let hash = 0;
+  for (let i = 0; i < trackId.length; i++) {
+    hash = Math.trunc((hash << 5) - hash + trackId.codePointAt(i)!);
+  }
+  return Math.abs(hash);
+}
+
+/**
+ * Returns the accent colour for a track id. Known tracks use predefined colours;
+ * unknown tracks get a deterministic colour from a hash-based palette.
+ *
+ * @param trackId - The track id to look up.
+ * @returns A hex colour string.
+ */
+export function accentForTrack(trackId: string): string {
+  if (trackId in knownAccents) return knownAccents[trackId];
+  return HASH_PALETTE[hashTrackId(trackId) % HASH_PALETTE.length];
+}
+
+/**
+ * Accent colours keyed by track id. Direct access for known ids;
+ * unknown ids fall back to a deterministic hash-based colour.
+ *
+ * For new code, prefer `accentForTrack()`.
+ */
+export const trackAccent: Record<string, string> = new Proxy(
+  Object.assign(Object.create(null), knownAccents),
+  {
+    get(target, property: string) {
+      if (property in target) return target[property];
+      return HASH_PALETTE[hashTrackId(property) % HASH_PALETTE.length];
+    },
+  },
+);
 
 /**
  * The ordered colours used for the level-up confetti burst.

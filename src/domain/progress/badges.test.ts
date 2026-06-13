@@ -8,6 +8,7 @@ import type { AppContent, Badge, Track } from "../content/types";
 function track(id: Track["id"], lessonIds: string[]): Track {
   return {
     id,
+    subjectId: "maths",
     title: id,
     description: "d",
     lessons: lessonIds.map((lessonId, index) => ({
@@ -78,6 +79,7 @@ const badges: Badge[] = [
 ];
 
 const content: AppContent = {
+  subjects: [{ id: "maths", title: "Maths", description: "Maths", icon: "🧮", accent: "#6D4AFF" }],
   tracks: [track("algebra", ["a1", "a2"])],
   badges,
 };

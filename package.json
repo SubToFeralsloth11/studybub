@@ -1,10 +1,10 @@
 {
-  "name": "mathbub",
+  "name": "studybub",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "author": "John Grimes",
-  "description": "MathBub - an interactive, gamified maths learning platform for a single learner.",
+  "description": "StudyBub - an interactive, gamified multi-subject learning platform for a single learner.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

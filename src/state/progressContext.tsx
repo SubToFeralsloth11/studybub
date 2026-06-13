@@ -14,7 +14,11 @@ import {
   type ProgressAction,
   type ProgressState,
 } from "./progressReducer";
-import { loadProgress, saveProgress } from "../domain/persistence/storage";
+import {
+  loadProgress,
+  migrateProgress,
+  saveProgress,
+} from "../domain/persistence/storage";
 
 import type { AppContent } from "../domain/content/types";
 
@@ -56,9 +60,10 @@ export function ProgressProvider({
   children,
 }: Readonly<ProgressProviderProps>) {
   const reducer = useMemo(() => createProgressReducer(content), [content]);
-  const [state, dispatch] = useReducer(reducer, undefined, () =>
-    initProgressState(loadProgress()),
-  );
+  const [state, dispatch] = useReducer(reducer, undefined, () => {
+    migrateProgress();
+    return initProgressState(loadProgress());
+  });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   // Persist the saved portion whenever it changes. This is a genuine external

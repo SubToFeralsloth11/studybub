@@ -37,7 +37,7 @@ export function AppHeader({ back, title, right }: Readonly<AppHeaderProps>) {
             to="/"
             className="flex items-center gap-2 font-display text-xl font-bold text-ink"
           >
-            <span aria-hidden>🫧</span> MathBub
+            <span aria-hidden>🫧</span> StudyBub
           </Link>
         )}
       </div>

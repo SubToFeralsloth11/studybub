@@ -2,8 +2,11 @@ import { useState } from "react";
 
 import { Feedback } from "./Feedback";
 import { ExpressionInput } from "./inputs/ExpressionInput";
+import { FillInTheBlankInput } from "./inputs/FillInTheBlankInput";
+import { MatchingInput } from "./inputs/MatchingInput";
 import { McqInput } from "./inputs/McqInput";
 import { NumericInput } from "./inputs/NumericInput";
+import { ShortTextInput } from "./inputs/ShortTextInput";
 import { Button } from "../../components/Button";
 import { Figure } from "../../components/Figure";
 import { RichBlocks } from "../../components/RichBlocks";
@@ -47,17 +50,26 @@ export function QuestionView({
   const [result, setResult] = useState<MarkResult | null>(null);
 
   const hasAnswer =
-    question.type === "mcq" ? selectedId !== null : value.trim() !== "";
+    question.type === "mcq"
+      ? selectedId !== null
+      : question.type === "matching"
+        ? false // matching handles its own submit
+        : value.trim() !== "";
 
-  function handleCheck() {
-    if (!hasAnswer || checked) return;
-    const input = question.type === "mcq" ? (selectedId ?? "") : value;
-    const marked = markAnswer(question, input);
+  function handleCheck(input?: string) {
+    if (!hasAnswer && !input) return;
+    if (checked) return;
+    const answer = input ?? (question.type === "mcq" ? (selectedId ?? "") : value);
+    const marked = markAnswer(question, answer);
     setResult(marked);
     // Unreadable input keeps the question editable for a fresh attempt.
     if (marked.status === "unreadable") return;
     setChecked(true);
     onAnswered(marked.status === "correct", question.xp);
+  }
+
+  function handleMatchingSubmit(mapping: string) {
+    handleCheck(mapping);
   }
 
   return (
@@ -82,6 +94,28 @@ export function QuestionView({
           onSubmit={handleCheck}
           revealed={checked}
         />
+      ) : question.type === "shortText" ? (
+        <ShortTextInput
+          value={value}
+          onChange={setValue}
+          onSubmit={handleCheck}
+          revealed={checked}
+        />
+      ) : question.type === "fillInTheBlank" ? (
+        <FillInTheBlankInput
+          template={question.template}
+          value={value}
+          onChange={setValue}
+          onSubmit={handleCheck}
+          revealed={checked}
+        />
+      ) : question.type === "matching" ? (
+        <MatchingInput
+          pairs={question.pairs}
+          onSubmit={handleMatchingSubmit}
+          revealed={checked}
+          result={result?.status === "correct" ? "correct" : result?.status === "incorrect" ? "incorrect" : null}
+        />
       ) : (
         <NumericInput
           value={value}
@@ -97,8 +131,8 @@ export function QuestionView({
       <div className="flex justify-end">
         {checked ? (
           <Button onClick={onContinue}>{continueLabel} →</Button>
-        ) : (
-          <Button onClick={handleCheck} disabled={!hasAnswer}>
+        ) : question.type === "matching" ? null : (
+          <Button onClick={() => handleCheck()} disabled={!hasAnswer}>
             Check answer
           </Button>
         )}

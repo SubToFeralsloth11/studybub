@@ -13,8 +13,11 @@ import { isBossUnlocked } from "../../domain/progress/unlock";
 import { useProgress } from "../../state/progressContext";
 import { useTrackFromRoute } from "../../state/useTrackFromRoute";
 import { ExpressionInput } from "../lesson/inputs/ExpressionInput";
+import { FillInTheBlankInput } from "../lesson/inputs/FillInTheBlankInput";
+import { MatchingInput } from "../lesson/inputs/MatchingInput";
 import { McqInput } from "../lesson/inputs/McqInput";
 import { NumericInput } from "../lesson/inputs/NumericInput";
+import { ShortTextInput } from "../lesson/inputs/ShortTextInput";
 
 import type { BossChallenge, Track } from "../../domain/content/types";
 
@@ -56,9 +59,9 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
   const hasAnswer =
     question?.type === "mcq" ? selectedId !== null : value.trim() !== "";
 
-  function handleSubmit() {
-    if (!hasAnswer) return;
-    const input = question.type === "mcq" ? (selectedId ?? "") : value;
+  function handleSubmit(matchInput?: string) {
+    if (!hasAnswer && !matchInput) return;
+    const input = matchInput ?? (question.type === "mcq" ? (selectedId ?? "") : value);
     const correct = markAnswer(question, input).status === "correct";
     const newScore = score + (correct ? 1 : 0);
     setScore(newScore);
@@ -181,6 +184,28 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
               onSubmit={handleSubmit}
               revealed={false}
             />
+          ) : question.type === "shortText" ? (
+            <ShortTextInput
+              value={value}
+              onChange={setValue}
+              onSubmit={handleSubmit}
+              revealed={false}
+            />
+          ) : question.type === "fillInTheBlank" ? (
+            <FillInTheBlankInput
+              template={question.template}
+              value={value}
+              onChange={setValue}
+              onSubmit={handleSubmit}
+              revealed={false}
+            />
+          ) : question.type === "matching" ? (
+            <MatchingInput
+              pairs={question.pairs}
+              onSubmit={(mapping) => handleSubmit(mapping)}
+              revealed={false}
+              result={null}
+            />
           ) : (
             <NumericInput
               value={value}
@@ -192,7 +217,7 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
           )}
 
           <div className="mt-5 flex justify-end">
-            <Button onClick={handleSubmit} disabled={!hasAnswer}>
+            <Button onClick={() => handleSubmit()} disabled={!hasAnswer}>
               {index + 1 >= total ? "Finish" : "Submit answer"} →
             </Button>
           </div>

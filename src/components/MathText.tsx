@@ -36,7 +36,7 @@ export function MathText({
         output: "htmlAndMathml",
       });
     } catch {
-      console.warn(`MathBub: could not typeset "${tex}"; showing fallback.`);
+      console.warn(`StudyBub: could not typeset "${tex}"; showing fallback.`);
       return null;
     }
   }, [tex, display]);

@@ -11,7 +11,7 @@ async function seedProgress(
     ([key, value]) => {
       globalThis.localStorage.setItem(key as string, value as string);
     },
-    ["mathbub.progress.v1", JSON.stringify(saved)],
+    ["studybub.progress.v1", JSON.stringify(saved)],
   );
 }
 
@@ -33,14 +33,18 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-test("home shows the three tracks and links to a track map", async ({
-  page,
-}) => {
+test("home shows subject cards and links to a subject", async ({ page }) => {
   await expect(
-    page.getByRole("heading", { name: /choose a track/i }),
+    page.getByRole("heading", { name: /choose a subject/i }),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: /Maths/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Science/i })).toBeVisible();
+  // Tap Maths to go to subject screen.
+  await page.getByRole("link", { name: /Maths/i }).click();
+  await expect(page).toHaveURL(/\/subject\/maths/);
+  // Tap Algebra track.
   await page.getByRole("link", { name: /Algebra \(Year 8\)/i }).click();
-  await expect(page).toHaveURL(/\/track\/algebra/);
+  await expect(page).toHaveURL(/\/subject\/maths\/track\/algebra/);
   await expect(
     page.getByRole("link", {
       name: /5A The language of algebra \(available\)/i,
@@ -51,7 +55,7 @@ test("home shows the three tracks and links to a track map", async ({
 test("a fresh track shows only the first lesson available", async ({
   page,
 }) => {
-  await page.goto("/track/geometry");
+  await page.goto("/subject/maths/track/geometry");
   await expect(
     page.getByRole("link", { name: /10D Congruent figures \(available\)/i }),
   ).toBeVisible();
@@ -67,6 +71,8 @@ test("a fresh track shows only the first lesson available", async ({
 test("complete the first lesson and have it persist across reload", async ({
   page,
 }) => {
+  // Navigate through the subject to the track.
+  await page.getByRole("link", { name: /Maths/i }).click();
   await page.getByRole("link", { name: /Algebra \(Year 8\)/i }).click();
   await page
     .getByRole("link", { name: /5A The language of algebra \(available\)/i })
@@ -147,7 +153,7 @@ test("the boss challenge unlocks once every lesson is complete", async ({
     streak: { count: 2, lastActiveDate: "2026-06-07" },
     badges: [],
   });
-  await page.goto("/track/time");
+  await page.goto("/subject/maths/track/time");
   await page
     .getByRole("link", { name: /boss challenge \(available\)/i })
     .click();

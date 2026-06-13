@@ -8,8 +8,11 @@
 
 import type { BadgeId } from "../content/types";
 
+/** The previous localStorage key - used for one-way migration. */
+export const OLD_STORAGE_KEY = "mathbub.progress.v1";
+
 /** The localStorage key under which progress is stored. */
-export const STORAGE_KEY = "mathbub.progress.v1";
+export const STORAGE_KEY = "studybub.progress.v1";
 
 /** The current schema version. */
 export const CURRENT_VERSION = 1;
@@ -163,7 +166,7 @@ export function parseSavedState(raw: string | null): SavedState {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    console.warn("MathBub: stored progress was unreadable; starting fresh.");
+    console.warn("StudyBub: stored progress was unreadable; starting fresh.");
     return defaultState();
   }
 
@@ -174,7 +177,7 @@ export function parseSavedState(raw: string | null): SavedState {
   // A known older version could be migrated here; there are none yet, so any
   // shape that fails validation recovers to a clean state.
   console.warn(
-    "MathBub: stored progress was invalid or from an incompatible version; starting fresh.",
+    "StudyBub: stored progress was invalid or from an incompatible version; starting fresh.",
   );
   return defaultState();
 }

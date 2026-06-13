@@ -6,11 +6,12 @@ import { defaultState, type SavedState } from "../domain/persistence/schema";
 import type { AppContent } from "../domain/content/types";
 
 // A minimal content set is enough for the reducer's initialisation behaviour.
-const emptyContent: AppContent = { tracks: [], badges: [] };
+const emptyContent: AppContent = { subjects: [], tracks: [], badges: [] };
 const reducer = createProgressReducer(emptyContent);
 
 // Content with a first-lesson badge, for exercising badge awarding.
 const badgedContent: AppContent = {
+  subjects: [],
   tracks: [],
   badges: [
     {
@@ -265,9 +266,11 @@ describe("progress reducer - US6 boss challenge", () => {
   it("awards the boss badge via its criterion on completion", () => {
     // A reducer over content with an algebra track and a boss-pass badge.
     const badged = createProgressReducer({
+      subjects: [{ id: "maths", title: "Maths", description: "Maths", icon: "🧮", accent: "#6D4AFF" }],
       tracks: [
         {
           id: "algebra",
+          subjectId: "maths",
           title: "Algebra",
           description: "d",
           lessons: [],

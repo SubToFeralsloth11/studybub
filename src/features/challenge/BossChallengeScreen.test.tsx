@@ -32,6 +32,7 @@ function mcq(id: string, correct: string): McqQuestion {
 
 const track: Track = {
   id: "time",
+  subjectId: "maths",
   title: "Time (Year 4)",
   description: "d",
   lessons: [
@@ -58,6 +59,7 @@ const track: Track = {
 };
 
 const content: AppContent = {
+  subjects: [{ id: "maths", title: "Maths", description: "Maths", icon: "🧮", accent: "#6D4AFF" }],
   tracks: [track],
   badges: [
     {

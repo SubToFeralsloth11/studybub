@@ -9,20 +9,40 @@ beforeEach(() => {
 });
 
 describe("HomeScreen", () => {
-  it("shows a card linking to each authored track's map", () => {
+  it("shows subject cards with correct track counts", () => {
     renderApp(<HomeScreen />);
+
     expect(
-      screen.getByRole("heading", { name: /choose a track/i }),
+      screen.getByRole("heading", { name: /choose a subject/i }),
     ).toBeInTheDocument();
+
+    // Maths has 3 tracks.
     expect(
-      screen.getByRole("link", { name: /Algebra \(Year 8\)/i }),
-    ).toHaveAttribute("href", "/track/algebra");
+      screen.getByRole("link", { name: /Maths/i }),
+    ).toHaveAttribute("href", "/subject/maths");
+    expect(screen.getByText(/3 tracks/)).toBeInTheDocument();
+
+    // Other subjects have no tracks yet.
     expect(
-      screen.getByRole("link", { name: /Geometry \(Year 10\)/i }),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: /Science/i }),
+    ).toHaveAttribute("href", "/subject/science");
+    expect(screen.getAllByText("No tracks yet").length).toBeGreaterThan(0);
+
     expect(
-      screen.getByRole("link", { name: /Time \(Year 4\)/i }),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: /HASS/i }),
+    ).toHaveAttribute("href", "/subject/hass");
+
+    expect(
+      screen.getByRole("link", { name: /English/i }),
+    ).toHaveAttribute("href", "/subject/english");
+
+    expect(
+      screen.getByRole("link", { name: /German/i }),
+    ).toHaveAttribute("href", "/subject/german");
+
+    expect(
+      screen.getByRole("link", { name: /HPE/i }),
+    ).toHaveAttribute("href", "/subject/hpe");
   });
 
   it("offers links to badges and a reset control", () => {

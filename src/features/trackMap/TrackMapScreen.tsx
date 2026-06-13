@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AppHeader } from "../../components/AppHeader";
 import { NotFound } from "../../components/NotFound";
 import { RewardBar } from "../../components/RewardBar";
+import { findSubjectForTrack } from "../../content";
 import {
   isBossUnlocked,
   lessonState,
@@ -149,11 +150,12 @@ export function TrackMapScreen() {
   const accent = trackAccent[track.id];
   const sorted = [...track.lessons].toSorted((a, b) => a.order - b.order);
   const bossUnlocked = isBossUnlocked(track, state.saved);
+  const subject = findSubjectForTrack(track.id);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col">
       <AppHeader
-        back={{ to: "/", label: "Tracks" }}
+        back={{ to: subject ? `/subject/${subject.id}` : "/", label: subject ? "Subjects" : "Home" }}
         title={track.title}
         right={<RewardBar />}
       />

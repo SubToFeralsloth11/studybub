@@ -5,7 +5,10 @@ import {
   findBadge,
   findChallenge,
   findLesson,
+  findSubject,
+  findSubjectForTrack,
   findTrack,
+  tracksForSubject,
 } from "./index";
 import { geometryFigures } from "./tracks/geometry";
 import { validateContent } from "../domain/content/validateContent";
@@ -53,5 +56,49 @@ describe("authored content", () => {
     for (const id of referencedFigureIds()) {
       expect(manifestIds).toContain(id);
     }
+  });
+
+  it("exposes all six subjects", () => {
+    const ids = appContent.subjects.map((s) => s.id);
+    expect(ids).toContain("maths");
+    expect(ids).toContain("science");
+    expect(ids).toContain("hass");
+    expect(ids).toContain("english");
+    expect(ids).toContain("german");
+    expect(ids).toContain("hpe");
+  });
+
+  it("findSubject returns a subject by id", () => {
+    const maths = findSubject("maths");
+    expect(maths).toBeDefined();
+    expect(maths?.title).toBe("Maths");
+    expect(maths?.icon).toBe("🧮");
+  });
+
+  it("findSubject returns undefined for unknown id", () => {
+    expect(findSubject("nope")).toBeUndefined();
+  });
+
+  it("tracksForSubject returns tracks belonging to a subject", () => {
+    const mathsTracks = tracksForSubject("maths");
+    expect(mathsTracks.length).toBe(3);
+    const ids = mathsTracks.map((t) => t.id);
+    expect(ids).toContain("algebra");
+    expect(ids).toContain("geometry");
+    expect(ids).toContain("time");
+  });
+
+  it("tracksForSubject returns empty array for subject with no tracks", () => {
+    expect(tracksForSubject("hass")).toEqual([]);
+  });
+
+  it("findSubjectForTrack returns the subject a track belongs to", () => {
+    const subj = findSubjectForTrack("algebra");
+    expect(subj).toBeDefined();
+    expect(subj?.id).toBe("maths");
+  });
+
+  it("findSubjectForTrack returns undefined for unknown track", () => {
+    expect(findSubjectForTrack("nope")).toBeUndefined();
   });
 });

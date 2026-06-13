@@ -192,6 +192,11 @@ const languageOfAlgebra: Lesson = {
   order: 1,
   title: "5A The language of algebra",
   sourceRef: "5A",
+  aiProvenance: {
+    tool: "ChatGPT",
+    sources: ["worksheet-5A.pdf"],
+    role: "checked",
+  },
   learnCards: [
     {
       id: "5a-key",
@@ -856,6 +861,7 @@ const multiplyingFractions: Lesson = {
 /** The Algebra track. */
 export const algebraTrack: Track = {
   id: "algebra",
+  subjectId: "maths",
   title: "Algebra (Year 8)",
   description: "Expand, factorise and work with terms and index laws.",
   lessons: [

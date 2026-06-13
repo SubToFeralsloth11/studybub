@@ -465,6 +465,7 @@ const similarTriangles: Lesson = {
 /** The Geometry track. */
 export const geometryTrack: Track = {
   id: "geometry",
+  subjectId: "maths",
   title: "Geometry (Year 10)",
   description:
     "Congruence, similarity, and the triangle tests that prove them.",

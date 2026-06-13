@@ -1,8 +1,8 @@
 /**
- * Dev-time content validation for MathBub.
+ * Dev-time content validation for StudyBub.
  *
  * `validateContent` asserts the structural invariants authors must satisfy (see
- * contracts/contentModel.md). It returns a list of human-readable issues - empty
+ * src/contracts/contentModel.md). It returns a list of human-readable issues - empty
  * when content is valid - rather than throwing, so callers can surface every
  * problem at once (a dev banner in development, a failing test in CI).
  *
@@ -11,10 +11,19 @@
 
 import { parse } from "mathjs";
 
-import type { AppContent, Question, Track, TrackId } from "./types";
+import type {
+  AiProvenance,
+  AppContent,
+  MatchingQuestion,
+  Question,
+  Track,
+} from "./types";
 
 /** A single human-readable validation problem. */
 export type ValidationIssue = string;
+
+/** The valid AI provenance roles. */
+const AI_ROLES = new Set(["generated", "checked", "both"]);
 
 // Symbols that may appear in an expression target without being declared
 // variables: standard mathematical constants understood by mathjs.
@@ -40,6 +49,38 @@ function symbolsIn(expression: string): Set<string> {
     }
   });
   return symbols;
+}
+
+/**
+ * Validates aiProvenance well-formedness when present.
+ *
+ * @param provenance - The provenance to validate (may be undefined).
+ * @param where - Location label for issue messages.
+ * @param issues - The accumulating issue list.
+ */
+function validateAiProvenance(
+  provenance: AiProvenance | undefined,
+  where: string,
+  issues: ValidationIssue[],
+): void {
+  if (!provenance) return;
+  if (!provenance.tool || provenance.tool.trim() === "") {
+    issues.push(`${where}: aiProvenance has empty tool name.`);
+  }
+  if (!AI_ROLES.has(provenance.role)) {
+    issues.push(
+      `${where}: aiProvenance has invalid role "${provenance.role}" (must be generated|checked|both).`,
+    );
+  }
+}
+
+/**
+ * Checks whether rich-blocks contain a `___` marker (in text blocks).
+ */
+function hasBlankMarker(blocks: { kind: string; text?: string }[]): boolean {
+  return blocks.some(
+    (block) => block.kind === "text" && (block.text ?? "").includes("___"),
+  );
 }
 
 /**
@@ -112,6 +153,60 @@ function validateQuestion(
       }
       break;
     }
+    case "shortText": {
+      const meaningful = question.accepted.filter(
+        (value) => value.trim() !== "",
+      );
+      if (meaningful.length === 0) {
+        issues.push(
+          `${where}: shortText "${question.id}" has no non-empty accepted answers.`,
+        );
+      }
+      break;
+    }
+    case "fillInTheBlank": {
+      const meaningful = question.accepted.filter(
+        (value) => value.trim() !== "",
+      );
+      if (meaningful.length === 0) {
+        issues.push(
+          `${where}: fillInTheBlank "${question.id}" has no non-empty accepted answers.`,
+        );
+      }
+      if (question.template.length === 0 || !hasBlankMarker(question.template)) {
+        issues.push(
+          `${where}: fillInTheBlank "${question.id}" template must contain "___" marker.`,
+        );
+      }
+      break;
+    }
+    case "matching": {
+      const matchQ = question as MatchingQuestion;
+      if (matchQ.pairs.length < 2) {
+        issues.push(
+          `${where}: matching "${question.id}" must have at least 2 pairs (has ${matchQ.pairs.length}).`,
+        );
+      }
+      const pairIds = matchQ.pairs.map((pair) => pair.id);
+      if (new Set(pairIds).size !== pairIds.length) {
+        issues.push(
+          `${where}: matching "${question.id}" has duplicate pair id.`,
+        );
+      }
+      for (const pair of matchQ.pairs) {
+        if (pair.left.length === 0) {
+          issues.push(
+            `${where}: matching "${question.id}" pair "${pair.id}" has empty left content.`,
+          );
+        }
+        if (pair.right.length === 0) {
+          issues.push(
+            `${where}: matching "${question.id}" pair "${pair.id}" has empty right content.`,
+          );
+        }
+      }
+      break;
+    }
   }
 }
 
@@ -164,40 +259,85 @@ function validateTrack(track: Track, issues: ValidationIssue[]): void {
     if (new Set(cardIds).size !== cardIds.length) {
       issues.push(`${where}: duplicate learn-card ids.`);
     }
+
+    validateAiProvenance(lesson.aiProvenance, where, issues);
+
     for (const question of allQuestions) {
       validateQuestion(question, where, issues);
     }
   }
 
+  const challengeWhere = `${track.id}/challenge`;
+  validateAiProvenance(track.challenge.aiProvenance, challengeWhere, issues);
+
   for (const question of track.challenge.questions) {
-    validateQuestion(question, `${track.id}/challenge`, issues);
+    validateQuestion(question, challengeWhere, issues);
   }
 }
 
 /**
  * Validates the entire authored content set.
  *
- * @param content - The aggregate app content (tracks and badges).
+ * @param content - The aggregate app content (subjects, tracks and badges).
  * @returns An array of human-readable issues; empty when content is valid.
  */
 export function validateContent(content: AppContent): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
+
+  // Subject validation.
+  if (content.subjects.length === 0) {
+    issues.push("Content must have at least one subject.");
+  }
+  const subjectIds = content.subjects.map((subject) => subject.id);
+  if (new Set(subjectIds).size !== subjectIds.length) {
+    issues.push("Duplicate subject ids across content.");
+  }
+  const validSubjectIds = new Set(subjectIds);
+
+  for (const subject of content.subjects) {
+    if (!subject.id || subject.id.trim() === "") {
+      issues.push("A subject has an empty id.");
+    }
+    if (!subject.title || subject.title.trim() === "") {
+      issues.push(`Subject "${subject.id}" has an empty title.`);
+    }
+    if (!subject.description || subject.description.trim() === "") {
+      issues.push(`Subject "${subject.id}" has an empty description.`);
+    }
+    if (!subject.icon || subject.icon.trim() === "") {
+      issues.push(`Subject "${subject.id}" has an empty icon.`);
+    }
+    if (!subject.accent || !/^#[0-9A-Fa-f]{6}$/.test(subject.accent)) {
+      issues.push(
+        `Subject "${subject.id}" has an invalid accent colour "${subject.accent}" (must be #RRGGBB).`,
+      );
+    }
+  }
 
   const trackIds = content.tracks.map((track) => track.id);
   if (new Set(trackIds).size !== trackIds.length) {
     issues.push("Duplicate track ids across content.");
   }
 
+  // Validate every track's subjectId references a real subject.
+  for (const track of content.tracks) {
+    if (!validSubjectIds.has(track.subjectId)) {
+      issues.push(
+        `Track "${track.id}" references unknown subject "${track.subjectId}".`,
+      );
+    }
+  }
+
   const badgeIds = new Set(content.badges.map((badge) => badge.id));
   if (badgeIds.size !== content.badges.length) {
     issues.push("Duplicate badge ids across content.");
   }
-  const knownTracks = new Set<TrackId>(content.tracks.map((track) => track.id));
+  const knownTracks = new Set<string>(content.tracks.map((track) => track.id));
 
   // Badge criteria that reference a specific track must name a real track.
   for (const badge of content.badges) {
     const match = /^(?:track-complete|boss-pass):(.+)$/.exec(badge.criterion);
-    if (match && !knownTracks.has(match[1] as TrackId)) {
+    if (match && !knownTracks.has(match[1])) {
       issues.push(
         `Badge "${badge.id}" criterion references unknown track "${match[1]}".`,
       );

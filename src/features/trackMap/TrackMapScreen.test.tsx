@@ -5,7 +5,7 @@ import { TrackMapScreen } from "./TrackMapScreen";
 import { STORAGE_KEY } from "../../domain/persistence/schema";
 import { renderApp } from "../../test/renderApp";
 
-import type { AppContent, Track } from "../../domain/content/types";
+import type { AppContent, Subject, Track } from "../../domain/content/types";
 
 function lessonOf(order: number) {
   return {
@@ -23,6 +23,7 @@ function lessonOf(order: number) {
 
 const track: Track = {
   id: "geometry",
+  subjectId: "maths",
   title: "Geometry (Year 10)",
   description: "d",
   lessons: [lessonOf(1), lessonOf(2), lessonOf(3)],
@@ -36,12 +37,20 @@ const track: Track = {
   },
 };
 
-const content: AppContent = { tracks: [track], badges: [] };
+const mathsSubject: Subject = {
+  id: "maths",
+  title: "Maths",
+  description: "Maths subject",
+  icon: "🧮",
+  accent: "#6D4AFF",
+};
+
+const content: AppContent = { subjects: [mathsSubject], tracks: [track], badges: [] };
 
 function renderMap() {
   return renderApp(<TrackMapScreen />, {
-    route: "/track/geometry",
-    path: "/track/:trackId",
+    route: "/subject/maths/track/geometry",
+    path: "/subject/:subjectId/track/:trackId",
     content,
   });
 }
@@ -56,7 +65,6 @@ describe("TrackMapScreen", () => {
     expect(
       screen.getByRole("link", { name: /lesson 1: lesson 1 \(available\)/i }),
     ).toBeInTheDocument();
-    // Locked lessons are not links and cannot be navigated to.
     expect(
       screen.queryByRole("link", { name: /lesson 2/i }),
     ).not.toBeInTheDocument();
@@ -66,7 +74,6 @@ describe("TrackMapScreen", () => {
   });
 
   it("reflects saved completion by unlocking the next lesson", () => {
-    // Seed storage so lesson 1 is complete before the provider hydrates.
     globalThis.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({

@@ -8,10 +8,21 @@ import type {
   Lesson,
   McqQuestion,
   Question,
+  Subject,
   Track,
 } from "./types";
 
 // --- Fixture builders: start from valid content, then mutate per test. ---
+
+function subject(id: string): Subject {
+  return {
+    id,
+    title: `${id} subject`,
+    description: "A subject",
+    icon: "📘",
+    accent: "#6D4AFF",
+  };
+}
 
 function mcq(id: string): McqQuestion {
   return {
@@ -46,9 +57,10 @@ function lesson(order: number, id: string): Lesson {
   };
 }
 
-function track(id: Track["id"]): Track {
+function track(id: string, subjId = "maths"): Track {
   return {
     id,
+    subjectId: subjId,
     title: `Track ${id}`,
     description: "desc",
     lessons: [lesson(1, `${id}-l1`), lesson(2, `${id}-l2`)],
@@ -76,7 +88,11 @@ function badges(): Badge[] {
 }
 
 function validContent(): AppContent {
-  return { tracks: [track("algebra")], badges: badges() };
+  return {
+    subjects: [subject("maths")],
+    tracks: [track("algebra")],
+    badges: badges(),
+  };
 }
 
 describe("validateContent - valid content", () => {
@@ -251,9 +267,300 @@ describe("validateContent - badge references", () => {
       criterion: "track-complete:geometry",
       icon: "📐",
     });
-    // geometry track is absent, so the criterion is dangling.
     expect(validateContent(content).join("\n")).toMatch(
       /references unknown track "geometry"/,
     );
+  });
+});
+
+// --- T004: Subject validation ---
+
+describe("validateContent - subject validation", () => {
+  it("flags duplicate subject ids", () => {
+    const content = validContent();
+    content.subjects.push(subject("maths"));
+    expect(validateContent(content).join("\n")).toMatch(
+      /Duplicate subject ids/,
+    );
+  });
+
+  it("flags a track with subjectId referencing an unknown subject", () => {
+    const content = validContent();
+    content.tracks[0].subjectId = "nonexistent";
+    expect(validateContent(content).join("\n")).toMatch(
+      /unknown subject "nonexistent"/,
+    );
+  });
+
+  it("flags when there are no subjects", () => {
+    const content = validContent();
+    content.subjects = [];
+    expect(validateContent(content).join("\n")).toMatch(
+      /must have at least one subject/i,
+    );
+  });
+
+  it("flags a subject with an empty title", () => {
+    const content = validContent();
+    content.subjects[0].title = "";
+    expect(validateContent(content).join("\n")).toMatch(
+      /empty title/i,
+    );
+  });
+});
+
+// --- T005: New question type validation ---
+
+describe("validateContent - shortText question validation", () => {
+  it("flags a shortText question with only empty accepted answers", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "What is the capital?" }],
+      explanation: [{ kind: "text", text: "Paris is the capital." }],
+      xp: 10,
+      accepted: ["  ", ""],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    expect(validateContent(content).join("\n")).toMatch(
+      /no non-empty accepted/,
+    );
+  });
+
+  it("accepts a well-formed shortText question", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "What is the capital?" }],
+      explanation: [{ kind: "text", text: "Paris is the capital." }],
+      xp: 10,
+      accepted: ["Paris", "paris"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    expect(validateContent(content)).toEqual([]);
+  });
+});
+
+describe("validateContent - fillInTheBlank question validation", () => {
+  it("flags a fillInTheBlank question with no ___ in template", () => {
+    const content = validContent();
+    const fitb: Question = {
+      id: "f1",
+      type: "fillInTheBlank",
+      prompt: [{ kind: "text", text: "Complete the sentence" }],
+      explanation: [{ kind: "text", text: "Water is the answer." }],
+      xp: 10,
+      template: [{ kind: "text", text: "No gap here" }],
+      accepted: ["water"],
+    };
+    content.tracks[0].lessons[0].practice = [fitb];
+    expect(validateContent(content).join("\n")).toMatch(
+      /must contain "___" marker/,
+    );
+  });
+
+  it("flags a fillInTheBlank question with empty accepted answers", () => {
+    const content = validContent();
+    const fitb: Question = {
+      id: "f1",
+      type: "fillInTheBlank",
+      prompt: [{ kind: "text", text: "Complete the sentence" }],
+      explanation: [{ kind: "text", text: "Water is the answer." }],
+      xp: 10,
+      template: [{ kind: "text", text: "The ___ is the powerhouse." }],
+      accepted: [""],
+    };
+    content.tracks[0].lessons[0].practice = [fitb];
+    expect(validateContent(content).join("\n")).toMatch(
+      /no non-empty accepted/,
+    );
+  });
+
+  it("flags a fillInTheBlank with empty template", () => {
+    const content = validContent();
+    const fitb: Question = {
+      id: "f1",
+      type: "fillInTheBlank",
+      prompt: [{ kind: "text", text: "Complete the sentence" }],
+      explanation: [{ kind: "text", text: "Water is the answer." }],
+      xp: 10,
+      template: [],
+      accepted: ["water"],
+    };
+    content.tracks[0].lessons[0].practice = [fitb];
+    expect(validateContent(content).join("\n")).toMatch(
+      /must contain "___" marker/,
+    );
+  });
+
+  it("accepts a well-formed fillInTheBlank question", () => {
+    const content = validContent();
+    const fitb: Question = {
+      id: "f1",
+      type: "fillInTheBlank",
+      prompt: [{ kind: "text", text: "Complete the sentence" }],
+      explanation: [{ kind: "text", text: "Mitochondria is correct." }],
+      xp: 10,
+      template: [{ kind: "text", text: "The ___ is the powerhouse." }],
+      accepted: ["mitochondria"],
+    };
+    content.tracks[0].lessons[0].practice = [fitb];
+    expect(validateContent(content)).toEqual([]);
+  });
+});
+
+describe("validateContent - matching question validation", () => {
+  it("flags a matching question with fewer than 2 pairs", () => {
+    const content = validContent();
+    const match: Question = {
+      id: "m1",
+      type: "matching",
+      prompt: [{ kind: "text", text: "Match items" }],
+      explanation: [{ kind: "text", text: "A goes with B." }],
+      xp: 10,
+      pairs: [
+        {
+          id: "p1",
+          left: [{ kind: "text", text: "H2O" }],
+          right: [{ kind: "text", text: "Water" }],
+        },
+      ],
+    };
+    content.tracks[0].lessons[0].practice = [match];
+    expect(validateContent(content).join("\n")).toMatch(
+      /must have at least 2 pairs/,
+    );
+  });
+
+  it("flags a matching question with duplicate pair ids", () => {
+    const content = validContent();
+    const match: Question = {
+      id: "m1",
+      type: "matching",
+      prompt: [{ kind: "text", text: "Match items" }],
+      explanation: [{ kind: "text", text: "A goes with B." }],
+      xp: 10,
+      pairs: [
+        {
+          id: "p1",
+          left: [{ kind: "text", text: "H2O" }],
+          right: [{ kind: "text", text: "Water" }],
+        },
+        {
+          id: "p1",
+          left: [{ kind: "text", text: "CO2" }],
+          right: [{ kind: "text", text: "Carbon dioxide" }],
+        },
+      ],
+    };
+    content.tracks[0].lessons[0].practice = [match];
+    expect(validateContent(content).join("\n")).toMatch(
+      /duplicate pair id/,
+    );
+  });
+
+  it("flags a matching question with empty pair content", () => {
+    const content = validContent();
+    const match: Question = {
+      id: "m1",
+      type: "matching",
+      prompt: [{ kind: "text", text: "Match items" }],
+      explanation: [{ kind: "text", text: "A goes with B." }],
+      xp: 10,
+      pairs: [
+        {
+          id: "p1",
+          left: [],
+          right: [{ kind: "text", text: "Water" }],
+        },
+        {
+          id: "p2",
+          left: [{ kind: "text", text: "CO2" }],
+          right: [{ kind: "text", text: "Carbon dioxide" }],
+        },
+      ],
+    };
+    content.tracks[0].lessons[0].practice = [match];
+    expect(validateContent(content).join("\n")).toMatch(
+      /empty (left|right) content/,
+    );
+  });
+
+  it("accepts a well-formed matching question", () => {
+    const content = validContent();
+    const match: Question = {
+      id: "m1",
+      type: "matching",
+      prompt: [{ kind: "text", text: "Match chemical formulas to names" }],
+      explanation: [{ kind: "text", text: "H2O is water, CO2 is carbon dioxide." }],
+      xp: 10,
+      pairs: [
+        {
+          id: "p1",
+          left: [{ kind: "text", text: "H2O" }],
+          right: [{ kind: "text", text: "Water" }],
+        },
+        {
+          id: "p2",
+          left: [{ kind: "text", text: "CO2" }],
+          right: [{ kind: "text", text: "Carbon dioxide" }],
+        },
+      ],
+    };
+    content.tracks[0].lessons[0].practice = [match];
+    expect(validateContent(content)).toEqual([]);
+  });
+});
+
+// --- T047-T050: AI provenance validation (from US4, written here with Foundational) ---
+
+describe("validateContent - aiProvenance validation", () => {
+  it("accepts a lesson with well-formed aiProvenance", () => {
+    const content = validContent();
+    content.tracks[0].lessons[0].aiProvenance = {
+      tool: "Claude",
+      sources: ["worksheet.pdf"],
+      role: "generated",
+    };
+    expect(validateContent(content)).toEqual([]);
+  });
+
+  it("rejects aiProvenance with empty tool", () => {
+    const content = validContent();
+    content.tracks[0].lessons[0].aiProvenance = {
+      tool: "",
+      sources: ["worksheet.pdf"],
+      role: "checked",
+    };
+    expect(validateContent(content).join("\n")).toMatch(
+      /empty (tool|provenance)/i,
+    );
+  });
+
+  it("rejects aiProvenance with invalid role", () => {
+    const content = validContent();
+    content.tracks[0].lessons[0].aiProvenance = {
+      tool: "Claude",
+      sources: ["worksheet.pdf"],
+      role: "invalid" as "generated",
+    };
+    expect(validateContent(content).join("\n")).toMatch(/invalid (role|provenance)/i);
+  });
+
+  it("accepts a lesson with no aiProvenance at all", () => {
+    const content = validContent();
+    expect(validateContent(content)).toEqual([]);
+  });
+
+  it("accepts a boss challenge with well-formed aiProvenance", () => {
+    const content = validContent();
+    content.tracks[0].challenge.aiProvenance = {
+      tool: "ChatGPT",
+      sources: [],
+      role: "both",
+    };
+    expect(validateContent(content)).toEqual([]);
   });
 });

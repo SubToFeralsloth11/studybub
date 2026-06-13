@@ -48,7 +48,7 @@ export class ErrorBoundary extends Component<
    * @param info - React-supplied component stack information.
    */
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("MathBub render error:", error, info.componentStack);
+    console.error("StudyBub render error:", error, info.componentStack);
   }
 
   /**
@@ -68,7 +68,7 @@ export class ErrorBoundary extends Component<
           </div>
           <h1 className="text-2xl text-ink">Something popped</h1>
           <p className="text-muted">
-            MathBub hit an unexpected snag. Your saved progress is safe - reload
+            StudyBub hit an unexpected snag. Your saved progress is safe - reload
             to pick up where you left off.
           </p>
           <button
@@ -76,7 +76,7 @@ export class ErrorBoundary extends Component<
             onClick={() => globalThis.location.reload()}
             className="rounded-pill bg-brand px-6 py-3 font-display font-semibold text-white shadow-bub transition hover:bg-brand-deep"
           >
-            Reload MathBub
+            Reload StudyBub
           </button>
         </div>
       );
