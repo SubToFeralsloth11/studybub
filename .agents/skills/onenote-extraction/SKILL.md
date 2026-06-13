@@ -32,9 +32,9 @@ bun run .agents/skills/onenote-extraction/scripts/extractPages.ts
 # Output: src/content/tracks/<trackName>.ts files
 ```
 
-## Two extraction approaches
+## Extraction approach
 
-### Approach A: Playwright DOM scraping (use first)
+### Playwright DOM scraping
 
 No Azure AD app required. Works with existing 1Password credentials and
 agent-browser session. Extracts rendered text + images from the WOPI iframe.
@@ -65,20 +65,7 @@ The actual teaching content (explanations, worked examples, question text) is
 rarely in OneNote — it is typically in the textbook the exercises reference.
 This is why we use OneNote as a blueprint, not a content source.
 
-### Approach B: Microsoft Graph API (preferred for production)
-
-Requires an Azure AD app registration with `Notes.Read` delegated permission.
-Returns structured OneNote page HTML with preserved formatting, embedded images,
-and maths notation.
-
-**When to use:** Production pipeline, need to preserve formatting, need
-incremental sync, or DOM scraping fails.
-
-**Script:** `scripts/pocGraphApi.ts`
-
-See `references/graph-api.md` for registration and auth details.
-
-## Workflow (Approach A)
+## Workflow
 
 ### Step 1: Login to OneNote
 
