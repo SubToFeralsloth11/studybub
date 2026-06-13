@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "skill-creator": {
+      "source": "johngrimes/skills",
+      "sourceType": "github",
+      "skillPath": "skill-creator/SKILL.md",
+      "computedHash": "f58f0e5d4a8c38fa01e81c99c8ba960afa941d695eb55b0dcb2b2bede15ad89b"
+    }
+  }
+}
