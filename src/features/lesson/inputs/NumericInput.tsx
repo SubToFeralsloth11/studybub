@@ -1,3 +1,6 @@
+import { useRef } from "react";
+
+import { MathSymbolButtons } from "../../../components/MathSymbolButtons";
 import { TextAnswerField } from "../../../components/TextAnswerField";
 
 interface NumericInputProps {
@@ -31,17 +34,32 @@ export function NumericInput({
   revealed,
   unit,
 }: Readonly<NumericInputProps>) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
-    <div className="flex items-center gap-3">
-      <TextAnswerField
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <TextAnswerField
+            ref={inputRef}
+            value={value}
+            onChange={onChange}
+            onSubmit={onSubmit}
+            disabled={revealed}
+            label="Your answer"
+            placeholder="Type your answer"
+          />
+        </div>
+        {unit ? (
+          <span className="font-display text-muted">{unit}</span>
+        ) : null}
+      </div>
+      <MathSymbolButtons
+        inputRef={inputRef}
         value={value}
         onChange={onChange}
-        onSubmit={onSubmit}
         disabled={revealed}
-        label="Your answer"
-        placeholder="Type your answer"
       />
-      {unit ? <span className="font-display text-muted">{unit}</span> : null}
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { parse } from "mathjs";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
+import { MathSymbolButtons } from "../../../components/MathSymbolButtons";
 import { MathText } from "../../../components/MathText";
 import { TextAnswerField } from "../../../components/TextAnswerField";
+import { normaliseMathInput } from "../../../domain/marking/normaliseMathInput";
 
 interface ExpressionInputProps {
   /** The current input value. */
@@ -18,6 +20,10 @@ interface ExpressionInputProps {
 /**
  * Attempts to convert a plain expression string to TeX for echoing.
  *
+ * Unicode math symbols are normalised to ASCII equivalents before parsing
+ * (e.g. ×→*, ÷→/, ²→^2) so the live preview works with pasted or
+ * typed Unicode maths.
+ *
  * @param value - The raw expression input.
  * @returns The TeX string, or null if the input cannot be parsed.
  */
@@ -26,7 +32,13 @@ function toTexOrNull(value: string): string | null {
   try {
     return parse(value).toTex();
   } catch {
-    return null;
+    const normalised = normaliseMathInput(value);
+    if (normalised === "") return null;
+    try {
+      return parse(normalised).toTex();
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -48,12 +60,14 @@ export function ExpressionInput({
   onSubmit,
   revealed,
 }: Readonly<ExpressionInputProps>) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const tex = useMemo(() => toTexOrNull(value), [value]);
   const hasInput = value.trim() !== "";
 
   return (
     <div className="flex flex-col gap-2">
       <TextAnswerField
+        ref={inputRef}
         value={value}
         onChange={onChange}
         onSubmit={onSubmit}
@@ -61,6 +75,12 @@ export function ExpressionInput({
         label="Type your expression"
         placeholder="e.g. 2(a+b)"
         mono
+      />
+      <MathSymbolButtons
+        inputRef={inputRef}
+        value={value}
+        onChange={onChange}
+        disabled={revealed}
       />
       {hasInput && tex ? (
         <p className="px-1 text-muted">
