@@ -174,4 +174,18 @@ export const badges: Badge[] = [
     criterion: "all-tracks-complete",
     icon: "👑",
   },
+  {
+    id: "conquest-master",
+    title: "Conquest chronicler",
+    description: "Finish every Spanish Conquest lesson",
+    criterion: "track-complete:spanish-conquest",
+    icon: "⚔️",
+  },
+  {
+    id: "boss-spanish-conquest",
+    title: "Spanish Conquest boss slayer",
+    description: "Pass the Spanish Conquest boss challenge",
+    criterion: "boss-pass:spanish-conquest",
+    icon: "🏆",
+  },
 ];

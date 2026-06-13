@@ -10,6 +10,7 @@
  */
 
 import { badges } from "./badges";
+import { hssSubject } from "./subjects/hss";
 import { mathsSubject } from "./subjects/maths";
 import { algebraTrack } from "./tracks/algebra";
 import { decimalsTrack } from "./tracks/decimals";
@@ -18,6 +19,7 @@ import { integerOperationsTrack } from "./tracks/integerOperations";
 import { perimeterAndAreaTrack } from "./tracks/perimeterAndArea";
 import { pythagorasTrack } from "./tracks/pythagoras";
 import { quadrilateralsTrack } from "./tracks/quadrilaterals";
+import { spanishConquestTrack } from "./tracks/spanishConquest";
 import { timeTrack } from "./tracks/time";
 import { volumeTrack } from "./tracks/volume";
 import { validateContent } from "../domain/content/validateContent";
@@ -33,7 +35,7 @@ import type {
 
 /** The complete authored content shipped with the app. */
 export const appContent: AppContent = {
-  subjects: [mathsSubject],
+  subjects: [hssSubject, mathsSubject],
   tracks: [
     algebraTrack,
     decimalsTrack,
@@ -42,6 +44,7 @@ export const appContent: AppContent = {
     perimeterAndAreaTrack,
     pythagorasTrack,
     quadrilateralsTrack,
+    spanishConquestTrack,
     timeTrack,
     volumeTrack,
   ],
