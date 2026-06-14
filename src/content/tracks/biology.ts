@@ -379,7 +379,10 @@ const microscopesLesson: Lesson = {
         ),
       ],
       explanation: [
-        m("Total magnification = 10 \\\\times 40 = 400", "10 x 40 = 400"),
+        m(
+          String.raw`Total magnification = 10 \\times 40 = 400`,
+          "10 x 40 = 400",
+        ),
       ],
       xp: 10,
       options: [
@@ -398,7 +401,7 @@ const microscopesLesson: Lesson = {
           "Calculate the total magnification produced by a 10x eyepiece and a 100x objective lens.",
         ),
       ],
-      explanation: [m("10 \\\\times 100 = 1000", "10 x 100 = 1000")],
+      explanation: [m(String.raw`10 \\times 100 = 1000`, "10 x 100 = 1000")],
       xp: 10,
       accepted: ["1000", "1000x"],
     },
@@ -517,7 +520,7 @@ const microscopesLesson: Lesson = {
       ],
       explanation: [
         m(
-          "Initial = 10 \\\\times 10 = 100. New = 10 \\\\times 40 = 400. 400 \\\\div 100 = 4",
+          String.raw`Initial = 10 \\times 10 = 100. New = 10 \\times 40 = 400. 400 \\div 100 = 4`,
           "Initial = 100x, new = 400x, so 4 times greater",
         ),
       ],
@@ -846,7 +849,7 @@ const cellSizesLesson: Lesson = {
       id: "sizes-p2",
       type: "numeric",
       prompt: [t("Convert 10 micrometres into millimetres.")],
-      explanation: [m("10 \\\\div 1000 = 0.01", "10 / 1000 = 0.01")],
+      explanation: [m(String.raw`10 \\div 1000 = 0.01`, "10 / 1000 = 0.01")],
       xp: 10,
       accepted: ["0.01", "0.01 mm"],
       unit: "mm",
@@ -855,7 +858,9 @@ const cellSizesLesson: Lesson = {
       id: "sizes-p3",
       type: "numeric",
       prompt: [t("Convert 20 micrometres into nanometres.")],
-      explanation: [m("20 \\\\times 1000 = 20 000", "20 x 1000 = 20000")],
+      explanation: [
+        m(String.raw`20 \\times 1000 = 20 000`, "20 x 1000 = 20000"),
+      ],
       xp: 10,
       accepted: ["20000", "20000 nm", "20 000"],
       unit: "nm",
@@ -870,7 +875,7 @@ const cellSizesLesson: Lesson = {
       ],
       explanation: [
         m(
-          "20 \\text{ mm} = 20 000 \\mu\\text{m}. 20 000 \\\\div 8 = 2500",
+          String.raw`20 \\text{ mm} = 20 000 \\mu\\text{m}. 20 000 \\div 8 = 2500`,
           "20 mm = 20000 micrometres. 20000 / 8 = 2500",
         ),
       ],
@@ -925,7 +930,7 @@ const cellSizesLesson: Lesson = {
       type: "numeric",
       prompt: [t("Convert 130 nanometres into millimetres.")],
       explanation: [
-        m("130 \\\\div 1 000 000 = 0.00013", "130 / 1000000 = 0.00013"),
+        m(String.raw`130 \\div 1 000 000 = 0.00013`, "130 / 1000000 = 0.00013"),
       ],
       xp: 15,
       accepted: ["0.00013", "0.00013 mm"],
@@ -986,7 +991,7 @@ const biologyBossQuestions: Question[] = [
         "A microscope has a 10x eyepiece and a 40x objective. What is the total magnification?",
       ),
     ],
-    explanation: [m("10 \\\\times 40 = 400", "10 x 40 = 400")],
+    explanation: [m(String.raw`10 \\times 40 = 400`, "10 x 40 = 400")],
     xp: 20,
     options: [
       { id: "a", label: [t("400x")] },
@@ -1055,7 +1060,7 @@ const biologyBossQuestions: Question[] = [
     id: "bio-boss-5",
     type: "numeric",
     prompt: [t("Convert 500 micrometres into millimetres.")],
-    explanation: [m("500 \\\\div 1000 = 0.5", "500 / 1000 = 0.5")],
+    explanation: [m(String.raw`500 \\div 1000 = 0.5`, "500 / 1000 = 0.5")],
     xp: 20,
     accepted: ["0.5", "0.5 mm"],
     unit: "mm",
