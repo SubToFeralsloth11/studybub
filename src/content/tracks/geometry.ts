@@ -20,6 +20,31 @@ import type {
 } from "../../domain/content/types";
 
 // ---------------------------------------------------------------------------
+// Figures
+// ---------------------------------------------------------------------------
+
+const figCongruentPair: Figure = {
+  id: "geometry-congruent-pair",
+  alt: "Two right-angled triangles of the same size side by side, with matching sides a, b, c in matching colours, and a label reading 'congruent' with a double-headed arrow.",
+  textFallback:
+    "[Diagram: Two right-angled triangles of the same size side by side, with matching sides labelled a, b, c, and a 'congruent' label between them]",
+};
+
+const figTriangleCongruenceTests: Figure = {
+  id: "geometry-triangle-congruence-tests",
+  alt: "2 by 2 grid of four pairs of triangles demonstrating the four congruence tests: SSS, SAS, AAS, and RHS.",
+  textFallback:
+    "[Diagram: 2x2 grid of four pairs of triangles demonstrating the four congruence tests - SSS, SAS, AAS, RHS - with matching sides and angles marked]",
+};
+
+const figSimilarPair: Figure = {
+  id: "geometry-similar-pair",
+  alt: "Two right-angled triangles of different sizes, with corresponding sides in proportion and matching angles marked with arcs. A label between them reads 'similar, scale factor 2'.",
+  textFallback:
+    "[Diagram: Two right-angled triangles of different sizes, with matching angles marked and a 'similar, scale factor 2' label between them]",
+};
+
+// ---------------------------------------------------------------------------
 // 10D - Congruent figures
 // ---------------------------------------------------------------------------
 
@@ -37,6 +62,7 @@ const lesson10D: Lesson = {
     {
       id: "10d-key",
       heading: "Key idea: congruent figures",
+      figure: figCongruentPair,
       body: [
         t(
           "Two figures are congruent if they have exactly the same shape and the same size.",
@@ -411,6 +437,7 @@ const lesson10E: Lesson = {
     {
       id: "10e-key",
       heading: "Key idea: the four congruence tests",
+      figure: figTriangleCongruenceTests,
       body: [
         t(
           "There are four tests that prove two triangles are congruent. You only need to match one of these sets of conditions:",
@@ -817,6 +844,7 @@ const lesson10H: Lesson = {
     {
       id: "10h-key",
       heading: "Key idea: similar figures",
+      figure: figSimilarPair,
       body: [
         t(
           "Two figures are similar if they have exactly the same shape but may be different sizes.",
@@ -1696,8 +1724,12 @@ const bossChallenge: BossChallenge = {
 // Track
 // ---------------------------------------------------------------------------
 
-/** Figures referenced by the geometry track (none currently). */
-export const geometryFigures: Figure[] = [];
+/** Figures referenced by the geometry track. */
+export const geometryFigures: Figure[] = [
+  figCongruentPair,
+  figTriangleCongruenceTests,
+  figSimilarPair,
+];
 
 /** The complete Congruence and Similarity track for Year 8. */
 export const geometryTrack: Track = {

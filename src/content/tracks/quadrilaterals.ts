@@ -12,7 +12,32 @@
 
 import { m, t } from "../blocks";
 
-import type { AiProvenance, Lesson, Track } from "../../domain/content/types";
+import type {
+  AiProvenance,
+  Figure,
+  Lesson,
+  Track,
+} from "../../domain/content/types";
+
+// ---------------------------------------------------------------------------
+// Figures
+// ---------------------------------------------------------------------------
+
+const figQuadrilateralsGrid: Figure = {
+  id: "quadrilaterals-types-grid",
+  alt: "2 by 3 grid of six labelled quadrilaterals: square, rectangle, parallelogram, rhombus, trapezium, and kite.",
+  textFallback:
+    "[Diagram: 2x3 grid showing the six main quadrilaterals - square, rectangle, parallelogram, rhombus, trapezium, kite - each with their defining marks]",
+};
+
+const figAngleSum360: Figure = {
+  id: "quadrilaterals-360-degrees",
+  alt: "Generic quadrilateral with its four interior angles labelled 1, 2, 3, 4 and curved arrows showing the four angles add to 360 degrees.",
+  textFallback:
+    "[Diagram: A generic quadrilateral with its four interior angles labelled 1 to 4 and arrows showing they sum to 360 degrees]",
+};
+
+// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // Shared AI provenance for every lesson and the boss challenge.
@@ -38,6 +63,7 @@ const lesson1: Lesson = {
     {
       id: "c1-key",
       heading: "Key idea: what is a quadrilateral?",
+      figure: figQuadrilateralsGrid,
       body: [
         t(
           "A quadrilateral is any closed shape with four straight sides and four vertices. The word comes from Latin: quadri- (four) + latus (side).",
@@ -823,6 +849,7 @@ const lesson3: Lesson = {
     {
       id: "c3-key",
       heading: "Key idea: the interior angles of any quadrilateral sum to 360°",
+      figure: figAngleSum360,
       body: [
         t(
           "Every quadrilateral, no matter its shape, has interior angles that sum to 360°.",
@@ -1309,6 +1336,12 @@ const bossQuestions = [
 // ===========================================================================
 // Track export
 // ===========================================================================
+
+/** Figures referenced by the quadrilaterals track. */
+export const quadrilateralsFigures: Figure[] = [
+  figQuadrilateralsGrid,
+  figAngleSum360,
+];
 
 /** The Quadrilaterals track for Year 8 maths. */
 export const quadrilateralsTrack: Track = {

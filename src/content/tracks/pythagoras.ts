@@ -11,7 +11,32 @@
 
 import { m, t } from "../blocks";
 
-import type { Lesson, BossChallenge, Track } from "../../domain/content/types";
+import type {
+  Figure,
+  Lesson,
+  BossChallenge,
+  Track,
+} from "../../domain/content/types";
+
+// ---------------------------------------------------------------------------
+// Figures
+// ---------------------------------------------------------------------------
+
+const figPythagorasTriangle: Figure = {
+  id: "pythagoras-right-triangle",
+  alt: "Right-angled triangle with legs labelled a and b, hypotenuse labelled c, and the equation a squared + b squared = c squared.",
+  textFallback:
+    "[Diagram: Right-angled triangle with legs a and b, hypotenuse c, and the formula a^2 + b^2 = c^2]",
+};
+
+const figPythagorasSquares: Figure = {
+  id: "pythagoras-squares-on-sides",
+  alt: "Right-angled triangle with a square drawn on each side: square a on the longer leg, square b on the shorter leg, and square c on the hypotenuse, with the equation a squared + b squared = c squared.",
+  textFallback:
+    "[Diagram: Right triangle with a square on the longer leg (a), a square on the shorter leg (b), and a larger square on the hypotenuse (c), showing a^2 + b^2 = c^2]",
+};
+
+// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // 4K - Introduction to Pythagoras' theorem
@@ -31,6 +56,7 @@ const lesson4K: Lesson = {
     {
       id: "4k-key",
       heading: "Key idea: Pythagoras' theorem",
+      figure: figPythagorasTriangle,
       body: [
         t("Pythagoras' theorem applies to right-angled triangles only."),
         t(
@@ -382,6 +408,7 @@ const lesson4L: Lesson = {
     {
       id: "4l-key",
       heading: "Key idea: using Pythagoras' theorem",
+      figure: figPythagorasSquares,
       body: [
         t(
           "Pythagoras' theorem is used to find unknown side lengths in right-angled triangles and to solve real-world problems involving distances.",
@@ -1332,6 +1359,12 @@ const bossChallenge: BossChallenge = {
 // ---------------------------------------------------------------------------
 // Track
 // ---------------------------------------------------------------------------
+
+/** Figures referenced by the Pythagoras track. */
+export const pythagorasFigures: Figure[] = [
+  figPythagorasTriangle,
+  figPythagorasSquares,
+];
 
 /** The complete Pythagoras' Theorem track for Year 8. */
 export const pythagorasTrack: Track = {

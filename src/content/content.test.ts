@@ -10,10 +10,18 @@ import {
   findTrack,
   tracksForSubject,
 } from "./index";
+import { algebraFigures } from "./tracks/algebra";
 import { biologyFigures } from "./tracks/biology";
+import { decimalsFigures } from "./tracks/decimals";
 import { earthScienceRocksFigures } from "./tracks/earthScienceRocks";
 import { geometryFigures } from "./tracks/geometry";
+import { integerOperationsFigures } from "./tracks/integerOperations";
+import { perimeterAndAreaFigures } from "./tracks/perimeterAndArea";
+import { pythagorasFigures } from "./tracks/pythagoras";
+import { quadrilateralsFigures } from "./tracks/quadrilaterals";
 import { spanishConquestFigures } from "./tracks/spanishConquest";
+import { timeFigures } from "./tracks/time";
+import { volumeFigures } from "./tracks/volume";
 import { validateContent } from "../domain/content/validateContent";
 
 // Collects every figure id referenced anywhere in the authored content.
@@ -57,10 +65,18 @@ describe("authored content", () => {
   it("resolves every referenced figure id to a manifest entry", () => {
     const manifestIds = new Set(
       [
+        ...algebraFigures,
         ...biologyFigures,
-        ...geometryFigures,
-        ...spanishConquestFigures,
+        ...decimalsFigures,
         ...earthScienceRocksFigures,
+        ...geometryFigures,
+        ...integerOperationsFigures,
+        ...perimeterAndAreaFigures,
+        ...pythagorasFigures,
+        ...quadrilateralsFigures,
+        ...spanishConquestFigures,
+        ...timeFigures,
+        ...volumeFigures,
       ].map((figure) => figure.id),
     );
     for (const id of referencedFigureIds()) {

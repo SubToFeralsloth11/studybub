@@ -12,7 +12,30 @@
 
 import { m, t } from "../blocks";
 
-import type { Lesson, BossChallenge, Track } from "../../domain/content/types";
+import type {
+  Figure,
+  Lesson,
+  BossChallenge,
+  Track,
+} from "../../domain/content/types";
+
+// ---------------------------------------------------------------------------
+// Figures
+// ---------------------------------------------------------------------------
+
+const figPartsOfExpression: Figure = {
+  id: "algebra-parts-of-expression",
+  alt: "Diagram showing the anatomy of the algebraic expression 4x + 7, with arrows labelling the variable (x), coefficient (4), term (4x), constant (7) and expression (4x + 7).",
+  textFallback:
+    "[Diagram: 4x + 7 with arrows pointing to the variable x, the coefficient 4, the term 4x, the constant 7, and the whole expression]",
+};
+
+const figDistributiveAreaModel: Figure = {
+  id: "algebra-distributive-area-model",
+  alt: "Area model showing 3(x + 2) = 3x + 6: a rectangle of height 3 and width x + 2 is split into a left sub-rectangle of area 3x and a right sub-rectangle of area 6.",
+  textFallback:
+    "[Diagram: Rectangle of height 3 and width x+2 split into 3x and 6, demonstrating 3(x+2) = 3x + 6]",
+};
 
 // ---------------------------------------------------------------------------
 // Lesson 1: 5A The language of algebra
@@ -32,6 +55,7 @@ const languageOfAlgebra: Lesson = {
     {
       id: "5a-key",
       heading: "Key idea: the building blocks",
+      figure: figPartsOfExpression,
       body: [
         t(
           "Algebra uses letters (variables) to stand for unknown numbers. Each part of an expression has a name:",
@@ -911,6 +935,7 @@ const expandingBrackets: Lesson = {
     {
       id: "5g-key",
       heading: "Key idea: the distributive law",
+      figure: figDistributiveAreaModel,
       body: [
         t(
           "The distributive law says that multiplying a number by a sum is the same as multiplying each term separately and adding the results:",
@@ -2172,6 +2197,12 @@ const algebraBoss: BossChallenge = {
 // ---------------------------------------------------------------------------
 // Track export
 // ---------------------------------------------------------------------------
+
+/** Figures referenced by the algebra track. */
+export const algebraFigures: Figure[] = [
+  figPartsOfExpression,
+  figDistributiveAreaModel,
+];
 
 export const algebraTrack: Track = {
   id: "algebra",
