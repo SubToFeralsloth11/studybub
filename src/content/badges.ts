@@ -188,4 +188,32 @@ export const badges: Badge[] = [
     criterion: "boss-pass:spanish-conquest",
     icon: "🏆",
   },
+  {
+    id: "biology-master",
+    title: "Biologist",
+    description: "Finish every Year 8 Biology lesson",
+    criterion: "track-complete:biology",
+    icon: "🧫",
+  },
+  {
+    id: "boss-biology",
+    title: "Biology boss slayer",
+    description: "Pass the Year 8 Biology boss challenge",
+    criterion: "boss-pass:biology",
+    icon: "🏆",
+  },
+  {
+    id: "earth-science-master",
+    title: "Geologist",
+    description: "Finish every Year 8 Earth Science lesson",
+    criterion: "track-complete:earth-science-rocks",
+    icon: "🪨",
+  },
+  {
+    id: "boss-earth-science-rocks",
+    title: "Earth Science boss slayer",
+    description: "Pass the Year 8 Earth Science boss challenge",
+    criterion: "boss-pass:earth-science-rocks",
+    icon: "🏆",
+  },
 ];

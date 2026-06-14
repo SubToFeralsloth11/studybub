@@ -10,6 +10,8 @@ import {
   findTrack,
   tracksForSubject,
 } from "./index";
+import { biologyFigures } from "./tracks/biology";
+import { earthScienceRocksFigures } from "./tracks/earthScienceRocks";
 import { geometryFigures } from "./tracks/geometry";
 import { spanishConquestFigures } from "./tracks/spanishConquest";
 import { validateContent } from "../domain/content/validateContent";
@@ -54,9 +56,12 @@ describe("authored content", () => {
 
   it("resolves every referenced figure id to a manifest entry", () => {
     const manifestIds = new Set(
-      [...geometryFigures, ...spanishConquestFigures].map(
-        (figure) => figure.id,
-      ),
+      [
+        ...biologyFigures,
+        ...geometryFigures,
+        ...spanishConquestFigures,
+        ...earthScienceRocksFigures,
+      ].map((figure) => figure.id),
     );
     for (const id of referencedFigureIds()) {
       expect(manifestIds).toContain(id);
@@ -86,8 +91,12 @@ describe("authored content", () => {
     expect(ids).toContain("algebra");
   });
 
-  it("tracksForSubject returns empty array for subject with no tracks", () => {
-    expect(tracksForSubject("science")).toEqual([]);
+  it("tracksForSubject returns tracks for the science subject", () => {
+    const scienceTracks = tracksForSubject("science");
+    expect(scienceTracks.length).toBe(2);
+    const ids = scienceTracks.map((t) => t.id);
+    expect(ids).toContain("biology");
+    expect(ids).toContain("earth-science-rocks");
   });
 
   it("findSubjectForTrack returns the subject a track belongs to", () => {

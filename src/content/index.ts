@@ -12,8 +12,11 @@
 import { badges } from "./badges";
 import { hssSubject } from "./subjects/hss";
 import { mathsSubject } from "./subjects/maths";
+import { scienceSubject } from "./subjects/science";
 import { algebraTrack } from "./tracks/algebra";
+import { biologyTrack } from "./tracks/biology";
 import { decimalsTrack } from "./tracks/decimals";
+import { earthScienceRocksTrack } from "./tracks/earthScienceRocks";
 import { geometryTrack } from "./tracks/geometry";
 import { integerOperationsTrack } from "./tracks/integerOperations";
 import { perimeterAndAreaTrack } from "./tracks/perimeterAndArea";
@@ -35,10 +38,12 @@ import type {
 
 /** The complete authored content shipped with the app. */
 export const appContent: AppContent = {
-  subjects: [hssSubject, mathsSubject],
+  subjects: [hssSubject, mathsSubject, scienceSubject],
   tracks: [
     algebraTrack,
+    biologyTrack,
     decimalsTrack,
+    earthScienceRocksTrack,
     geometryTrack,
     integerOperationsTrack,
     perimeterAndAreaTrack,
