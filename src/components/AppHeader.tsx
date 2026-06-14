@@ -46,7 +46,17 @@ export function AppHeader({ back, title, right }: Readonly<AppHeaderProps>) {
           {title}
         </h1>
       ) : null}
-      <div className="flex flex-1 items-center justify-end gap-2">{right}</div>
+      <div className="flex flex-1 items-center justify-end gap-2">
+        <Link
+          to="/settings"
+          aria-label="Settings"
+          title="Settings"
+          className="rounded-lg p-1.5 text-ink/60 transition hover:bg-cream-deep hover:text-ink"
+        >
+          ⚙
+        </Link>
+        {right}
+      </div>
     </header>
   );
 }

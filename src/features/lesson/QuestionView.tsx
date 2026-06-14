@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Feedback } from "./Feedback";
 import { ExpressionInput } from "./inputs/ExpressionInput";
@@ -11,6 +11,7 @@ import { Button } from "../../components/Button";
 import { Figure } from "../../components/Figure";
 import { RichBlocks } from "../../components/RichBlocks";
 import { markAnswer } from "../../domain/marking/markAnswer";
+import { useAiConfig } from "../../state/aiConfigContext";
 
 import type { Question } from "../../domain/content/types";
 import type { MarkResult } from "../../domain/marking/markResult";
@@ -44,10 +45,13 @@ export function QuestionView({
   onContinue,
   continueLabel = "Next",
 }: Readonly<QuestionViewProps>) {
+  const { aiConfig } = useAiConfig();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(false);
   const [result, setResult] = useState<MarkResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const hasAnswer =
     question.type === "mcq"
@@ -56,22 +60,90 @@ export function QuestionView({
         ? false // matching handles its own submit
         : value.trim() !== "";
 
-  function handleCheck(input?: string) {
-    if (!hasAnswer && !input) return;
-    if (checked) return;
-    const answer =
-      input ?? (question.type === "mcq" ? (selectedId ?? "") : value);
-    const marked = markAnswer(question, answer);
-    setResult(marked);
-    // Unreadable input keeps the question editable for a fresh attempt.
-    if (marked.status === "unreadable") return;
-    setChecked(true);
-    onAnswered(marked.status === "correct", question.xp);
+  const handleCheck = useCallback(
+    async (input?: string) => {
+      if (!hasAnswer && !input) return;
+      if (checked || loading) return;
+
+      // Cancel any in-flight request.
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
+
+      const answer =
+        input ?? (question.type === "mcq" ? (selectedId ?? "") : value);
+
+      // Only short-text questions use AI marking.
+      if (question.type === "shortText") {
+        setLoading(true);
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        try {
+          const marked = await markAnswer(question, answer, {
+            aiConfig: aiConfig ?? undefined,
+            signal: controller.signal,
+          });
+
+          // If the request was aborted by a new submission, don't update state.
+          if (controller.signal.aborted) return;
+
+          setResult(marked);
+          if (marked.status === "unreadable") return;
+          if (
+            marked.status === "aiNotConfigured" ||
+            marked.status === "aiError"
+          ) {
+            // Error states keep the question editable for retry.
+            return;
+          }
+          setChecked(true);
+          onAnswered(marked.status === "correct", question.xp);
+        } finally {
+          if (!controller.signal.aborted) {
+            setLoading(false);
+          }
+        }
+        return;
+      }
+
+      // Synchronous marking for all other question types.
+      const marked = await markAnswer(question, answer);
+      setResult(marked);
+      if (marked.status === "unreadable") return;
+      setChecked(true);
+      onAnswered(marked.status === "correct", question.xp);
+    },
+    [
+      hasAnswer,
+      checked,
+      loading,
+      question,
+      selectedId,
+      value,
+      aiConfig,
+      onAnswered,
+    ],
+  );
+
+  function handleRetry() {
+    setResult(null);
+    setLoading(false);
+    handleCheck();
   }
 
   function handleMatchingSubmit(mapping: string) {
     handleCheck(mapping);
   }
+
+  const showSpinner = question.type === "shortText" && loading;
+
+  // Cancel in-flight AI request on unmount (navigate-away edge case).
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col gap-5">
@@ -92,22 +164,23 @@ export function QuestionView({
         <ExpressionInput
           value={value}
           onChange={setValue}
-          onSubmit={handleCheck}
+          onSubmit={() => handleCheck()}
           revealed={checked}
         />
       ) : question.type === "shortText" ? (
         <ShortTextInput
           value={value}
           onChange={setValue}
-          onSubmit={handleCheck}
+          onSubmit={() => handleCheck()}
           revealed={checked}
+          loading={showSpinner}
         />
       ) : question.type === "fillInTheBlank" ? (
         <FillInTheBlankInput
           template={question.template}
           value={value}
           onChange={setValue}
-          onSubmit={handleCheck}
+          onSubmit={() => handleCheck()}
           revealed={checked}
         />
       ) : question.type === "matching" ? (
@@ -127,20 +200,25 @@ export function QuestionView({
         <NumericInput
           value={value}
           onChange={setValue}
-          onSubmit={handleCheck}
+          onSubmit={() => handleCheck()}
           revealed={checked}
           unit={question.unit}
         />
       )}
 
-      {result ? <Feedback result={result} question={question} /> : null}
+      {result ? (
+        <Feedback result={result} question={question} onRetry={handleRetry} />
+      ) : null}
 
       <div className="flex justify-end">
         {checked ? (
           <Button onClick={onContinue}>{continueLabel} →</Button>
         ) : question.type === "matching" ? null : (
-          <Button onClick={() => handleCheck()} disabled={!hasAnswer}>
-            Check answer
+          <Button
+            onClick={() => handleCheck()}
+            disabled={!hasAnswer || loading}
+          >
+            {showSpinner ? "Judging your answer…" : "Check answer"}
           </Button>
         )}
       </div>

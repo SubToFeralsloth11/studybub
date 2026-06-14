@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { appContent } from "./content";
+import { AiConfigProvider } from "./state/aiConfigContext";
 import { ProgressProvider } from "./state/progressContext";
 import "./index.css";
 
@@ -18,9 +19,11 @@ createRoot(rootElement).render(
   <StrictMode>
     <ErrorBoundary>
       <ProgressProvider content={appContent}>
-        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <App />
-        </BrowserRouter>
+        <AiConfigProvider>
+          <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <App />
+          </BrowserRouter>
+        </AiConfigProvider>
       </ProgressProvider>
     </ErrorBoundary>
   </StrictMode>,

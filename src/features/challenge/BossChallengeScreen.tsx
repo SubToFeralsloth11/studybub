@@ -10,6 +10,7 @@ import { RichBlocks } from "../../components/RichBlocks";
 import { markAnswer } from "../../domain/marking/markAnswer";
 import { localDateIso } from "../../domain/progress/dates";
 import { isBossUnlocked } from "../../domain/progress/unlock";
+import { useAiConfig } from "../../state/aiConfigContext";
 import { useProgress } from "../../state/progressContext";
 import { useTrackFromRoute } from "../../state/useTrackFromRoute";
 import { ExpressionInput } from "../lesson/inputs/ExpressionInput";
@@ -42,6 +43,7 @@ type Phase = "intro" | "playing" | "result";
 function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
   const navigate = useNavigate();
   const { dispatch, state } = useProgress();
+  const { aiConfig } = useAiConfig();
   const [phase, setPhase] = useState<Phase>("intro");
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -59,11 +61,14 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
   const hasAnswer =
     question?.type === "mcq" ? selectedId !== null : value.trim() !== "";
 
-  function handleSubmit(matchInput?: string) {
+  async function handleSubmit(matchInput?: string) {
     if (!hasAnswer && !matchInput) return;
     const input =
       matchInput ?? (question.type === "mcq" ? (selectedId ?? "") : value);
-    const correct = markAnswer(question, input).status === "correct";
+    const result = await markAnswer(question, input, {
+      aiConfig: aiConfig ?? undefined,
+    });
+    const correct = result.status === "correct";
     const newScore = score + (correct ? 1 : 0);
     setScore(newScore);
     if (index + 1 >= total) {
