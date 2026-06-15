@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Feedback } from "./Feedback";
 import { ExpressionInput } from "./inputs/ExpressionInput";
@@ -10,10 +10,11 @@ import { ShortTextInput } from "./inputs/ShortTextInput";
 import { Button } from "../../components/Button";
 import { Figure } from "../../components/Figure";
 import { RichBlocks } from "../../components/RichBlocks";
+import { shuffleMcqOptions } from "../../domain/content/shuffleOptions";
 import { markAnswer } from "../../domain/marking/markAnswer";
 import { useAiConfig } from "../../state/aiConfigContext";
 
-import type { Question } from "../../domain/content/types";
+import type { McqQuestion, Question } from "../../domain/content/types";
 import type { MarkResult } from "../../domain/marking/markResult";
 
 interface QuestionViewProps {
@@ -52,6 +53,14 @@ export function QuestionView({
   const [result, setResult] = useState<MarkResult | null>(null);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Shuffle MCQ options so the correct answer is not always the first option.
+  // The shuffle is memoised to avoid re-shuffling on every render.
+  const displayedQuestion = useMemo(
+    () =>
+      question.type === "mcq" ? shuffleMcqOptions(question) : question,
+    [question],
+  );
 
   const hasAnswer =
     question.type === "mcq"
@@ -155,7 +164,7 @@ export function QuestionView({
 
       {question.type === "mcq" ? (
         <McqInput
-          question={question}
+          question={displayedQuestion as McqQuestion}
           selectedId={selectedId}
           onSelect={setSelectedId}
           revealed={checked}
