@@ -57,8 +57,7 @@ export function QuestionView({
   // Shuffle MCQ options so the correct answer is not always the first option.
   // The shuffle is memoised to avoid re-shuffling on every render.
   const displayedQuestion = useMemo(
-    () =>
-      question.type === "mcq" ? shuffleMcqOptions(question) : question,
+    () => (question.type === "mcq" ? shuffleMcqOptions(question) : question),
     [question],
   );
 

@@ -26,6 +26,22 @@ export const palette = {
   warn: "#F2545B",
 } as const;
 
+/**
+ * Accent colours for matching pair-box borders and number markers.
+ *
+ * Six visually distinct colours assigned to matching connections in round-robin
+ * order. Pair 1 uses index 0, pair 2 uses index 1, etc. The 7th pair recycles
+ * the first colour. The number marker (always unique) provides primary identity.
+ */
+export const MATCHING_PAIR_COLOURS: readonly string[] = [
+  "#6D4AFF", // Purple — brand.
+  "#0FB6A8", // Teal.
+  "#FF7A4D", // Orange.
+  "#3498DB", // Blue.
+  "#9B59B6", // Magenta.
+  "#E67E22", // Gold.
+];
+
 /** Deterministic palette for auto-generated accent colours. */
 const HASH_PALETTE = [
   "#6D4AFF",

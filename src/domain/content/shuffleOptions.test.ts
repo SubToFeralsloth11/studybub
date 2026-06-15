@@ -1,14 +1,18 @@
 /**
- * Tests for MCQ option shuffling.
+ * Tests for MCQ option shuffling and matching-pair shuffling.
  *
  * @module domain/content/shuffleOptions.test
  */
 
 import { describe, expect, it } from "vitest";
 
-import { fisherYatesShuffle, shuffleMcqOptions } from "./shuffleOptions";
+import {
+  fisherYatesShuffle,
+  shuffleMcqOptions,
+  shuffleMatchingPairs,
+} from "./shuffleOptions";
 
-import type { McqQuestion } from "./types";
+import type { MatchingPair, McqQuestion } from "./types";
 
 /** A deterministic "random" that cycles through a fixed sequence. */
 function sequenceRandom(values: number[]): () => number {
@@ -109,5 +113,92 @@ describe("shuffleMcqOptions", () => {
     const shuffled = shuffleMcqOptions(q);
     const ids = shuffled.options.map((o) => o.id).toSorted();
     expect(ids).toEqual(["a", "b", "c"]);
+  });
+});
+
+/** Factory for a minimal MatchingPair. */
+function makePair(id: string, left: string, right: string): MatchingPair {
+  return {
+    id,
+    left: [{ kind: "text", text: left }],
+    right: [{ kind: "text", text: right }],
+  };
+}
+
+describe("shuffleMatchingPairs", () => {
+  it("returns the same number of pairs as the input", () => {
+    const input: MatchingPair[] = [
+      makePair("p1", "A", "X"),
+      makePair("p2", "B", "Y"),
+      makePair("p3", "C", "Z"),
+    ];
+    const result = shuffleMatchingPairs(input);
+    expect(result).toHaveLength(3);
+  });
+
+  it("preserves the right side of each pair unchanged", () => {
+    const input: MatchingPair[] = [
+      makePair("p1", "A", "X"),
+      makePair("p2", "B", "Y"),
+    ];
+    const result = shuffleMatchingPairs(input);
+    // Each pair's right content stays with its original id.
+    const p1 = result.find((p) => p.id === "p1")!;
+    const p2 = result.find((p) => p.id === "p2")!;
+    expect(p1.right).toEqual(input[0].right);
+    expect(p2.right).toEqual(input[1].right);
+  });
+
+  it("preserves the original pair ids", () => {
+    const input: MatchingPair[] = [
+      makePair("p1", "A", "X"),
+      makePair("p2", "B", "Y"),
+    ];
+    const result = shuffleMatchingPairs(input);
+    expect(result[0].id).toBe(input[0].id);
+    expect(result[1].id).toBe(input[1].id);
+  });
+
+  it("preserves all original pair contents", () => {
+    const input: MatchingPair[] = [
+      makePair("p1", "A", "X"),
+      makePair("p2", "B", "Y"),
+      makePair("p3", "C", "Z"),
+    ];
+    const result = shuffleMatchingPairs(input);
+    // Each pair should still have its correct left and right content.
+    for (const pair of input) {
+      const found = result.find((p) => p.id === pair.id);
+      expect(found).toBeDefined();
+      expect(found!.left).toEqual(pair.left);
+      expect(found!.right).toEqual(pair.right);
+    }
+  });
+
+  it("does not mutate the original array", () => {
+    const input: MatchingPair[] = [
+      makePair("p1", "A", "X"),
+      makePair("p2", "B", "Y"),
+    ];
+    const originalRight = input[0].right;
+    shuffleMatchingPairs(input);
+    expect(input[0].right).toBe(originalRight);
+  });
+
+  it("produces a stable order with a deterministic random function", () => {
+    const input: MatchingPair[] = [
+      makePair("p1", "A", "X"),
+      makePair("p2", "B", "Y"),
+      makePair("p3", "C", "Z"),
+    ];
+    // Call twice with same deterministic random and assert same result order.
+    const first = shuffleMatchingPairs(input, () => 0.5);
+    const second = shuffleMatchingPairs(
+      [...input].map((p) => ({ ...p, right: [...p.right] })),
+      () => 0.5,
+    );
+    const firstIds = first.map((p) => p.id);
+    const secondIds = second.map((p) => p.id);
+    expect(firstIds).toEqual(secondIds);
   });
 });

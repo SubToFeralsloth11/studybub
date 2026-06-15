@@ -1,10 +1,10 @@
 /**
- * Fisher-Yates shuffle and MCQ option randomisation.
+ * Fisher-Yates shuffle, MCQ option randomisation, and matching-pair shuffling.
  *
  * @module domain/content/shuffleOptions
  */
 
-import type { McqQuestion } from "./types";
+import type { MatchingPair, McqQuestion } from "./types";
 
 /**
  * Performs an in-place Fisher-Yates shuffle on an array.
@@ -49,4 +49,35 @@ export function shuffleMcqOptions(
     ...question,
     options: fisherYatesShuffle([...question.options], random),
   };
+}
+
+/**
+ * Produces a shuffled copy of a matching-pair array for right-column display.
+ *
+ * The right-side content stays with its original pair id so that clicking an
+ * item by its visible text still produces the correct connection. Only the
+ * display order is randomised; the left-side content and pair ids are
+ * preserved unchanged. The original array is not mutated.
+ *
+ * @param pairs - The original array of matching pairs.
+ * @param random - Optional random function for deterministic testing.
+ * @returns A new array of matching pairs in random display order.
+ * @example
+ * ```ts
+ * const pairs = [
+ *   { id: "a", left: ..., right: [{ kind: "text", text: "X" }] },
+ *   { id: "b", left: ..., right: [{ kind: "text", text: "Y" }] },
+ * ];
+ * const shuffled = shuffleMatchingPairs(pairs);
+ * // shuffled has same left/right per pair, but the array order is randomised.
+ * ```
+ */
+export function shuffleMatchingPairs(
+  pairs: MatchingPair[],
+  random?: () => number,
+): MatchingPair[] {
+  // Shuffle a copy so the right column is displayed in random order, but each
+  // right item retains its original pair id (connections[leftId] === leftId
+  // must still work for correct marking).
+  return fisherYatesShuffle([...pairs], random);
 }
