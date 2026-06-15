@@ -398,3 +398,102 @@ describe("markShortTextAi — request body shape", () => {
     );
   });
 });
+
+describe("markShortTextAi — chat completions envelope", () => {
+  it("extracts and parses JSON from choices[0].message.content", async () => {
+    const fetchFn = mockFetch(200, {
+      id: "gen-123",
+      object: "chat.completion",
+      model: "deepseek/deepseek-v4-flash",
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: "assistant",
+            content:
+              '{"correct": true, "feedback": "Exactly right — chinampas were indeed floating gardens used by the Aztecs."}',
+          },
+        },
+      ],
+    });
+
+    const result = await markShortTextAi(
+      shortTextQ(),
+      "floating garden",
+      validConfig,
+      fetchFn,
+    );
+
+    expect(result).toEqual({
+      status: "correct",
+      feedback:
+        "Exactly right — chinampas were indeed floating gardens used by the Aztecs.",
+    });
+  });
+
+  it("handles incorrect answer in chat completions format", async () => {
+    const fetchFn = mockFetch(200, {
+      choices: [
+        {
+          message: {
+            content:
+              '{"correct": false, "feedback": "Not quite — chinampas were man-made farming islands, not naturally occurring gardens."}',
+          },
+        },
+      ],
+    });
+
+    const result = await markShortTextAi(
+      shortTextQ(),
+      "a natural garden",
+      validConfig,
+      fetchFn,
+    );
+
+    expect(result).toEqual({
+      status: "incorrect",
+      feedback:
+        "Not quite — chinampas were man-made farming islands, not naturally occurring gardens.",
+    });
+  });
+
+  it("falls back to envelope when content is not parseable JSON", async () => {
+    const fetchFn = mockFetch(200, {
+      choices: [
+        {
+          message: {
+            content: "Not JSON — just plain text",
+          },
+        },
+      ],
+    });
+
+    const result = await markShortTextAi(
+      shortTextQ(),
+      "floating garden",
+      validConfig,
+      fetchFn,
+    );
+
+    expect(result).toEqual({
+      status: "aiError",
+      message: "AI service returned an unexpected response. Try again.",
+    });
+  });
+
+  it("falls back to envelope when choices array is empty", async () => {
+    const fetchFn = mockFetch(200, { choices: [] });
+
+    const result = await markShortTextAi(
+      shortTextQ(),
+      "floating garden",
+      validConfig,
+      fetchFn,
+    );
+
+    expect(result).toEqual({
+      status: "aiError",
+      message: "AI service returned an unexpected response. Try again.",
+    });
+  });
+});

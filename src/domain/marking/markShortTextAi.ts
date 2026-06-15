@@ -45,6 +45,39 @@ function isValidAiResponse(value: unknown): value is AiResponse {
   );
 }
 
+/** The OpenAI chat completions response shape. */
+interface ChatCompletionResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+}
+
+/**
+ * Extracts the AI response from a chat completions envelope.
+ *
+ * OpenAI-compatible APIs wrap the model output in
+ * `choices[0].message.content`. If the content is a JSON string, it is
+ * parsed; otherwise the envelope itself is returned as a fallback (for
+ * providers that return the flat shape directly).
+ *
+ * @param envelope - The parsed outer response body.
+ * @returns The extracted AI response object.
+ */
+function extractAiResponse(envelope: unknown): unknown {
+  const cc = envelope as ChatCompletionResponse;
+  const content = cc.choices?.[0]?.message?.content;
+  if (typeof content === "string") {
+    try {
+      return JSON.parse(content);
+    } catch {
+      // Content was not JSON; fall through to return the envelope.
+    }
+  }
+  return envelope;
+}
+
 const SYSTEM_PROMPT =
   'You are a marking assistant for an educational app. Judge whether the learner\'s answer is correct based on the provided rubric. Respond ONLY with valid JSON: {"correct": true|false, "feedback": "1-3 sentence personalised explanation"}';
 
@@ -144,10 +177,10 @@ export async function markShortTextAi(
     };
   }
 
-  // Parse JSON.
+  // Parse the outer JSON response.
   let body: unknown;
   try {
-    body = await response.json();
+    body = extractAiResponse(await response.json());
   } catch {
     return {
       status: "aiError",
