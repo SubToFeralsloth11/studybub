@@ -11,7 +11,7 @@ import { renderApp } from "../../test/renderApp";
 
 import type { Question } from "../../domain/content/types";
 
-const LESSON_ID = "alg-5g-expanding-brackets";
+const LESSON_ID = "alg-5g-expanding";
 const lesson = findLesson("algebra", LESSON_ID)!;
 
 function renderLesson() {
@@ -27,39 +27,49 @@ async function answerCorrectly(
   question: Question,
 ) {
   switch (question.type) {
-  case "mcq": {
-    const radios = screen.getAllByRole("radio");
-    const correct = radios.find(
-      (radio) => radio.getAttribute("value") === question.correctOptionId,
-    );
-    await user.click(correct!);
-  
-  break;
-  }
-  case "numeric": {
-    await user.type(screen.getByRole("textbox"), question.accepted[0]);
-  
-  break;
-  }
-  case "shortText": {
-    await user.type(screen.getByRole("textbox"), question.accepted[0]);
-  
-  break;
-  }
-  case "fillInTheBlank": {
-    await user.type(screen.getByRole("textbox"), question.accepted[0]);
-  
-  break;
-  }
-  case "expression": {
-    await user.type(screen.getByRole("textbox"), question.target);
-  
-  break;
-  }
-  // No default
+    case "mcq": {
+      const radios = screen.getAllByRole("radio");
+      const correct = radios.find(
+        (radio) => radio.getAttribute("value") === question.correctOptionId,
+      );
+      await user.click(correct!);
+
+      break;
+    }
+    case "numeric": {
+      await user.type(screen.getByRole("textbox"), question.accepted[0]);
+
+      break;
+    }
+    case "shortText": {
+      await user.type(screen.getByRole("textbox"), question.accepted[0]);
+
+      break;
+    }
+    case "fillInTheBlank": {
+      await user.type(screen.getByRole("textbox"), question.accepted[0]);
+
+      break;
+    }
+    case "expression": {
+      await user.type(screen.getByRole("textbox"), question.target);
+
+      break;
+    }
+    // No default
   }
   await user.click(screen.getByRole("button", { name: /check answer/i }));
   await user.click(screen.getByRole("button", { name: /next|finish/i }));
+}
+
+// Advances through all learn cards to reach the practice phase.
+async function advanceToPractice(user: ReturnType<typeof userEvent.setup>) {
+  // The lesson has 3 learn cards; click "Next" twice, then "Start practice".
+  // Use getByText for the button label to avoid the getByRole / name regex
+  // interacting with jsdom getComputedStyle failures in error paths.
+  await user.click(screen.getByRole("button", { name: "Next →" }));
+  await user.click(screen.getByRole("button", { name: "Next →" }));
+  await user.click(screen.getByRole("button", { name: "Start practice →" }));
 }
 
 beforeEach(() => {
@@ -80,28 +90,21 @@ describe("LessonScreen", () => {
   it("advances from the last learn card into practice", async () => {
     const user = userEvent.setup();
     renderLesson();
-    await user.click(screen.getByRole("button", { name: /next/i }));
-    await user.click(screen.getByRole("button", { name: /start practice/i }));
-    // The first practice question is an MCQ, so radios now appear.
-    expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
+    await advanceToPractice(user);
+    // The first practice question is an expression-type question with a
+    // textbox input, not radio buttons.
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
   it("reveals a worked explanation on a wrong answer", async () => {
     const user = userEvent.setup();
     renderLesson();
-    await user.click(screen.getByRole("button", { name: /next/i }));
-    await user.click(screen.getByRole("button", { name: /start practice/i }));
+    await advanceToPractice(user);
 
-    // Select a deliberately wrong option, then check.
+    // The first practice question is an expression-type. Type a wrong answer.
     const firstQuestion = lesson.practice[0];
-    if (firstQuestion.type !== "mcq") throw new Error("expected an MCQ");
-    const wrong = screen
-      .getAllByRole("radio")
-      .find(
-        (radio) =>
-          radio.getAttribute("value") !== firstQuestion.correctOptionId,
-      );
-    await user.click(wrong!);
+    expect(firstQuestion.type).toBe("expression");
+    await user.type(screen.getByRole("textbox"), "wrong answer");
     await user.click(screen.getByRole("button", { name: /check answer/i }));
 
     const status = screen.getByRole("status");
@@ -113,9 +116,7 @@ describe("LessonScreen", () => {
     const user = userEvent.setup();
     renderLesson();
 
-    // Advance through both learn cards.
-    await user.click(screen.getByRole("button", { name: /next/i }));
-    await user.click(screen.getByRole("button", { name: /start practice/i }));
+    await advanceToPractice(user);
 
     // Answer every practice and mastery question correctly.
     for (const question of [...lesson.practice, ...lesson.mastery]) {

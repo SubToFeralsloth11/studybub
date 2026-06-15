@@ -10,16 +10,21 @@
  */
 
 import { badges } from "./badges";
-import { englishSubject } from "./subjects/english";
-import { germanSubject } from "./subjects/german";
-import { hassSubject } from "./subjects/hass";
-import { hpeSubject } from "./subjects/hpe";
+import { hssSubject } from "./subjects/hss";
 import { mathsSubject } from "./subjects/maths";
 import { scienceSubject } from "./subjects/science";
 import { algebraTrack } from "./tracks/algebra";
+import { biologyTrack } from "./tracks/biology";
+import { decimalsTrack } from "./tracks/decimals";
+import { earthScienceRocksTrack } from "./tracks/earthScienceRocks";
 import { geometryTrack } from "./tracks/geometry";
-import { scienceDemoTrack } from "./tracks/science-demo";
+import { integerOperationsTrack } from "./tracks/integerOperations";
+import { perimeterAndAreaTrack } from "./tracks/perimeterAndArea";
+import { pythagorasTrack } from "./tracks/pythagoras";
+import { quadrilateralsTrack } from "./tracks/quadrilaterals";
+import { spanishConquestTrack } from "./tracks/spanishConquest";
 import { timeTrack } from "./tracks/time";
+import { volumeTrack } from "./tracks/volume";
 import { validateContent } from "../domain/content/validateContent";
 
 import type {
@@ -33,15 +38,21 @@ import type {
 
 /** The complete authored content shipped with the app. */
 export const appContent: AppContent = {
-  subjects: [
-    mathsSubject,
-    scienceSubject,
-    hassSubject,
-    englishSubject,
-    germanSubject,
-    hpeSubject,
+  subjects: [hssSubject, mathsSubject, scienceSubject],
+  tracks: [
+    algebraTrack,
+    biologyTrack,
+    decimalsTrack,
+    earthScienceRocksTrack,
+    geometryTrack,
+    integerOperationsTrack,
+    perimeterAndAreaTrack,
+    pythagorasTrack,
+    quadrilateralsTrack,
+    spanishConquestTrack,
+    timeTrack,
+    volumeTrack,
   ],
-  tracks: [algebraTrack, geometryTrack, timeTrack, scienceDemoTrack],
   badges,
 };
 
@@ -128,8 +139,6 @@ export const trackIds: string[] = appContent.tracks.map((track) => track.id);
 if (import.meta.env?.DEV) {
   const issues = validateContent(appContent);
   if (issues.length > 0) {
-    console.error(
-      "StudyBub content validation issues:\n" + issues.join("\n"),
-    );
+    console.error("StudyBub content validation issues:\n" + issues.join("\n"));
   }
 }

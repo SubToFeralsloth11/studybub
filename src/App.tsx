@@ -5,6 +5,7 @@ import { BadgesScreen } from "./features/badges/BadgesScreen";
 import { BossChallengeScreen } from "./features/challenge/BossChallengeScreen";
 import { HomeScreen } from "./features/home/HomeScreen";
 import { LessonScreen } from "./features/lesson/LessonScreen";
+import { SettingsScreen } from "./features/settings/SettingsScreen";
 import { SubjectScreen } from "./features/subject/SubjectScreen";
 import { TrackMapScreen } from "./features/trackMap/TrackMapScreen";
 
@@ -32,6 +33,7 @@ export function App() {
       <Route path="/lesson/:trackId/:lessonId" element={<LessonScreen />} />
       <Route path="/challenge/:trackId" element={<BossChallengeScreen />} />
       <Route path="/badges" element={<BadgesScreen />} />
+      <Route path="/settings" element={<SettingsScreen />} />
       <Route path="/track/:trackId" element={<TrackRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

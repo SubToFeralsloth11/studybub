@@ -303,9 +303,7 @@ describe("validateContent - subject validation", () => {
   it("flags a subject with an empty title", () => {
     const content = validContent();
     content.subjects[0].title = "";
-    expect(validateContent(content).join("\n")).toMatch(
-      /empty title/i,
-    );
+    expect(validateContent(content).join("\n")).toMatch(/empty title/i);
   });
 });
 
@@ -337,6 +335,160 @@ describe("validateContent - shortText question validation", () => {
       explanation: [{ kind: "text", text: "Paris is the capital." }],
       xp: 10,
       accepted: ["Paris", "paris"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    expect(validateContent(content)).toEqual([]);
+  });
+});
+
+describe("validateContent - shortText numeric-only accepted lists", () => {
+  it("flags when all accepted values look numeric (integers)", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "How many?" }],
+      explanation: [{ kind: "text", text: "Four." }],
+      xp: 10,
+      accepted: ["4", "8", "12"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    const issues = validateContent(content);
+    expect(issues.join("\n")).toMatch(/numeric/);
+  });
+
+  it("flags decimals with leading digits", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "Size?" }],
+      explanation: [{ kind: "text", text: "0.5 mm." }],
+      xp: 10,
+      accepted: ["0.5", "0.5 mm", ".5"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    const issues = validateContent(content);
+    expect(issues.join("\n")).toMatch(/numeric/);
+  });
+
+  it("flags numbers with unit suffixes", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "Area?" }],
+      explanation: [{ kind: "text", text: "46 m." }],
+      xp: 10,
+      accepted: ["46 m", "46m"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    const issues = validateContent(content);
+    expect(issues.join("\n")).toMatch(/numeric/);
+  });
+
+  it("flags numbers with 'x' suffix", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "Magnification?" }],
+      explanation: [{ kind: "text", text: "1000x." }],
+      xp: 10,
+      accepted: ["1000x"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    const issues = validateContent(content);
+    expect(issues.join("\n")).toMatch(/numeric/);
+  });
+
+  it("does not flag mixed text-and-numeric lists", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "Experiment?" }],
+      explanation: [{ kind: "text", text: "Tests." }],
+      xp: 10,
+      accepted: ["experiment", "experiments"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    expect(validateContent(content)).toEqual([]);
+  });
+
+  it("does not flag mixed text-and-numeric like ['4', '4 times', 'four']", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "How many times?" }],
+      explanation: [{ kind: "text", text: "Four times." }],
+      xp: 10,
+      accepted: ["4", "4 times", "four"],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    expect(validateContent(content)).toEqual([]);
+  });
+});
+
+describe("validateContent - shortText long accepted list", () => {
+  it("flags when accepted list has more than 8 items", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "Name European capitals." }],
+      explanation: [{ kind: "text", text: "Many." }],
+      xp: 10,
+      accepted: [
+        "Paris",
+        "Berlin",
+        "London",
+        "Madrid",
+        "Rome",
+        "Vienna",
+        "Prague",
+        "Warsaw",
+        "Lisbon",
+      ],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    const issues = validateContent(content);
+    expect(issues.join("\n")).toMatch(/9 accepted items/);
+  });
+
+  it("does not flag accepted list with exactly 8 items", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "Name capitals." }],
+      explanation: [{ kind: "text", text: "Eight." }],
+      xp: 10,
+      accepted: [
+        "Paris",
+        "Berlin",
+        "London",
+        "Madrid",
+        "Rome",
+        "Vienna",
+        "Prague",
+        "Warsaw",
+      ],
+    };
+    content.tracks[0].lessons[0].practice = [shortText];
+    expect(validateContent(content)).toEqual([]);
+  });
+
+  it("does not flag accepted list with fewer than 8 items", () => {
+    const content = validContent();
+    const shortText: Question = {
+      id: "s1",
+      type: "shortText",
+      prompt: [{ kind: "text", text: "What organism?" }],
+      explanation: [{ kind: "text", text: "Things." }],
+      xp: 10,
+      accepted: ["experiment", "experiments"],
     };
     content.tracks[0].lessons[0].practice = [shortText];
     expect(validateContent(content)).toEqual([]);
@@ -456,9 +608,7 @@ describe("validateContent - matching question validation", () => {
       ],
     };
     content.tracks[0].lessons[0].practice = [match];
-    expect(validateContent(content).join("\n")).toMatch(
-      /duplicate pair id/,
-    );
+    expect(validateContent(content).join("\n")).toMatch(/duplicate pair id/);
   });
 
   it("flags a matching question with empty pair content", () => {
@@ -494,7 +644,9 @@ describe("validateContent - matching question validation", () => {
       id: "m1",
       type: "matching",
       prompt: [{ kind: "text", text: "Match chemical formulas to names" }],
-      explanation: [{ kind: "text", text: "H2O is water, CO2 is carbon dioxide." }],
+      explanation: [
+        { kind: "text", text: "H2O is water, CO2 is carbon dioxide." },
+      ],
       xp: 10,
       pairs: [
         {
@@ -546,7 +698,9 @@ describe("validateContent - aiProvenance validation", () => {
       sources: ["worksheet.pdf"],
       role: "invalid" as "generated",
     };
-    expect(validateContent(content).join("\n")).toMatch(/invalid (role|provenance)/i);
+    expect(validateContent(content).join("\n")).toMatch(
+      /invalid (role|provenance)/i,
+    );
   });
 
   it("accepts a lesson with no aiProvenance at all", () => {

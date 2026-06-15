@@ -9,6 +9,7 @@ import { render, type RenderResult } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { appContent } from "../content";
+import { AiConfigProvider } from "../state/aiConfigContext";
 import { ProgressProvider } from "../state/progressContext";
 
 import type { AppContent } from "../domain/content/types";
@@ -38,15 +39,17 @@ export function renderApp(
   const { route = "/", path, content = appContent } = options;
   return render(
     <ProgressProvider content={content}>
-      <MemoryRouter initialEntries={[route]}>
-        {path ? (
-          <Routes>
-            <Route path={path} element={element} />
-          </Routes>
-        ) : (
-          element
-        )}
-      </MemoryRouter>
+      <AiConfigProvider>
+        <MemoryRouter initialEntries={[route]}>
+          {path ? (
+            <Routes>
+              <Route path={path} element={element} />
+            </Routes>
+          ) : (
+            element
+          )}
+        </MemoryRouter>
+      </AiConfigProvider>
     </ProgressProvider>,
   );
 }

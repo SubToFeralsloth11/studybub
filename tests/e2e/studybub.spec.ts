@@ -15,8 +15,9 @@ async function seedProgress(
   );
 }
 
-// Answers the current numeric question and advances.
-async function answerNumeric(page: Page, value: string): Promise<void> {
+// Submits a text-based answer (numeric, expression, fill-in-the-blank) and
+// advances.
+async function answerText(page: Page, value: string): Promise<void> {
   await page.getByRole("textbox").fill(value);
   await page.getByRole("button", { name: /check answer/i }).click();
   await page.getByRole("button", { name: /next|finish/i }).click();
@@ -27,6 +28,33 @@ async function answerMcq(page: Page, optionId: string): Promise<void> {
   await page.locator(`input[type=radio][value="${optionId}"]`).check();
   await page.getByRole("button", { name: /check answer/i }).click();
   await page.getByRole("button", { name: /next|finish/i }).click();
+}
+
+// Advances through learn cards to reach the practice phase.
+async function advanceToPractice(page: Page): Promise<void> {
+  await page.getByRole("button", { name: /next/i }).click();
+  await page.getByRole("button", { name: /next/i }).click();
+  await page.getByRole("button", { name: /start practice/i }).click();
+}
+
+// Seeds the Time track as fully complete to unlock the boss challenge.
+async function seedCompleteTimeTrack(
+  page: Page,
+  overrides?: Record<string, unknown>,
+): Promise<void> {
+  await seedProgress(page, {
+    version: 1,
+    lessons: {
+      "time-4j-units-conversion": { completed: true, bestAccuracy: 1 },
+      "time-timetables": { completed: true, bestAccuracy: 1 },
+      "time-problem-solving": { completed: true, bestAccuracy: 1 },
+    },
+    challenges: {},
+    xp: 0,
+    streak: { count: 0, lastActiveDate: "" },
+    badges: [],
+    ...overrides,
+  });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -78,13 +106,37 @@ test("complete the first lesson and have it persist across reload", async ({
     .getByRole("link", { name: /5A The language of algebra \(available\)/i })
     .click();
 
-  // One learn card, then practice and mastery.
-  await page.getByRole("button", { name: /start practice/i }).click();
-  await answerNumeric(page, "7"); // coefficient of x in 7x
-  await answerNumeric(page, "3"); // terms in 4a + 2b - 5
-  await answerNumeric(page, "9"); // constant term in 6x + 9
-  await answerNumeric(page, "8"); // coefficient of y in 8y
-  await answerMcq(page, "a"); // a variable is "n"
+  // Three learn cards, then practice and mastery.
+  await advanceToPractice(page);
+
+  // Practice questions.
+  await answerMcq(page, "a"); // coefficient of x -> 4
+  await answerText(page, "4"); // terms in 3a+2b-5+c -> 4
+  await answerText(page, "-3"); // constant term -> -3
+  await answerText(page, "x + 8"); // sum of x and 8
+  await answerText(page, "6 * m"); // product of m and 6
+  await answerText(page, "17"); // evaluate 4a-3, a=5
+  await answerText(page, "14"); // evaluate 2x+3y, x=4, y=2
+  await answerMcq(page, "b"); // which is an equation?
+  await answerText(page, "2 * n - 5"); // 5 less than twice n
+  await answerText(page, "18"); // evaluate a(b+2), a=3, b=4
+
+  // Mastery questions.
+  await answerText(page, "p / 5 + 3"); // quotient of p/5 + 3
+  await answerText(page, "31"); // evaluate p^2+3q, p=4, q=5
+
+  // Mastery matching: connect left ids to right ids in smallCaps.
+  await page.getByText("Coefficient of x").click();
+  await page.getByText("3", { exact: true }).click();
+  await page.getByText("Coefficient of y").click();
+  await page.getByText("-2", { exact: true }).click();
+  await page.getByText("Constant term").click();
+  await page.getByText("5", { exact: true }).click();
+  await page.getByRole("button", { name: /check answer/i }).click();
+
+  // Now advance to the next mastery question (the last one).
+  await page.getByRole("button", { name: /next/i }).click();
+  await answerText(page, "11"); // evaluate (3x+4)/2, x=6
 
   await expect(page.getByText(/lesson mastered/i)).toBeVisible();
   await page.getByRole("button", { name: /back to map/i }).click();
@@ -106,33 +158,26 @@ test("complete the first lesson and have it persist across reload", async ({
 test("algebra expression answers are marked by equivalence", async ({
   page,
 }) => {
-  // Navigate directly to the expanding-brackets lesson and reach its
-  // expression question (two learn cards, then practice 1-3, then the
-  // expression at practice 4).
-  await page.goto("/lesson/algebra/alg-5g-expanding-brackets");
-  await page.getByRole("button", { name: /next/i }).click();
-  await page.getByRole("button", { name: /start practice/i }).click();
-  await answerMcq(page, "b"); // 3(x+4) -> 3x+12
-  await answerNumeric(page, "10"); // constant term of 2(x+5)
-  await answerMcq(page, "a"); // 4(2x+1) -> 8x+4
+  // Navigate directly to the expanding lesson and reach its expression
+  // question (three learn cards, then the first practice expression).
+  await page.goto("/lesson/algebra/alg-5g-expanding");
+  await advanceToPractice(page);
 
-  // Expression question: a factorised form of 2(a+b) is accepted.
+  // First practice question: expand 3(x+2). Target is "3*x+6" but
+  // "3x+6" (without explicit multiplication) should also be accepted.
   const input = page.getByRole("textbox");
-  await input.fill("2(a+b)");
+  await input.fill("3x+6");
   await page.getByRole("button", { name: /check answer/i }).click();
   await expect(page.getByRole("status")).toContainText(/correct/i);
 });
 
 test("unreadable expression input is handled gently", async ({ page }) => {
-  await page.goto("/lesson/algebra/alg-5g-expanding-brackets");
-  await page.getByRole("button", { name: /next/i }).click();
-  await page.getByRole("button", { name: /start practice/i }).click();
-  await answerMcq(page, "b");
-  await answerNumeric(page, "10");
-  await answerMcq(page, "a");
+  await page.goto("/lesson/algebra/alg-5g-expanding");
+  await advanceToPractice(page);
 
   const input = page.getByRole("textbox");
   await input.fill("2a +");
+  await page.getByRole("button", { name: /check answer/i }).click();
   await expect(page.getByText(/can't read that/i)).toBeVisible();
   // The field stays editable so the learner can fix it.
   await expect(input).toBeEnabled();
@@ -141,17 +186,10 @@ test("unreadable expression input is handled gently", async ({ page }) => {
 test("the boss challenge unlocks once every lesson is complete", async ({
   page,
 }) => {
-  // Seed the Time track fully complete (both lessons).
-  await seedProgress(page, {
-    version: 1,
-    lessons: {
-      "time-4j-units": { completed: true, bestAccuracy: 1 },
-      "time-4j-clock": { completed: true, bestAccuracy: 1 },
-    },
-    challenges: {},
+  // Seed the Time track fully complete (three lessons).
+  await seedCompleteTimeTrack(page, {
     xp: 100,
     streak: { count: 2, lastActiveDate: "2026-06-07" },
-    badges: [],
   });
   await page.goto("/subject/maths/track/time");
   await page
@@ -165,35 +203,25 @@ test("the boss challenge unlocks once every lesson is complete", async ({
 test("a boss challenge plays to completion and awards a score and rewards", async ({
   page,
 }) => {
-  await seedProgress(page, {
-    version: 1,
-    lessons: {
-      "time-4j-units": { completed: true, bestAccuracy: 1 },
-      "time-4j-clock": { completed: true, bestAccuracy: 1 },
-    },
-    challenges: {},
-    xp: 0,
-    streak: { count: 0, lastActiveDate: "" },
-    badges: [],
-  });
+  await seedCompleteTimeTrack(page);
   await page.goto("/challenge/time");
   await page.getByRole("button", { name: /start challenge/i }).click();
 
   // Answer all five Time-review questions correctly.
-  await page.getByRole("textbox").fill("180"); // minutes in 3 hours
+  await page.getByRole("textbox").fill("3"); // train journey difference
   await page.getByRole("button", { name: /submit answer/i }).click();
-  await page.locator('input[value="c"]').check(); // 9 pm -> 21:00
+  await page.getByRole("textbox").fill("1110"); // arrival time
   await page.getByRole("button", { name: /submit answer/i }).click();
-  await page.getByRole("textbox").fill("120"); // seconds in 2 minutes
+  await page.getByRole("textbox").fill("0515"); // international flight arrival
   await page.getByRole("button", { name: /submit answer/i }).click();
-  await page.getByRole("textbox").fill("40"); // 8:20 to 9:00
+  await page.getByRole("textbox").fill("0600"); // truck departure time
   await page.getByRole("button", { name: /submit answer/i }).click();
-  await page.locator('input[value="b"]').check(); // 16:00 -> 4 pm
+  await page.locator('input[value="b"]').check(); // average speed closer to slower
   await page.getByRole("button", { name: /finish/i }).click();
 
   await expect(page.getByText(/challenge complete/i)).toBeVisible();
   await expect(page.getByText("5 / 5")).toBeVisible();
-  await expect(page.getByText(/\+80 bonus XP/i)).toBeVisible();
+  await expect(page.getByText(/\+100 bonus XP/i)).toBeVisible();
 });
 
 test("progress reset is guarded by a confirmation", async ({ page }) => {
@@ -227,8 +255,10 @@ test("the lesson flow has no critical accessibility violations", async ({
     [],
   );
 
-  await page.getByRole("button", { name: /start practice/i }).click();
-  await expect(page.getByRole("textbox")).toBeVisible();
+  // Advance through three learn cards to reach practice.
+  await advanceToPractice(page);
+  // Practice phase reached; the first question could be any input type.
+  await expect(page.getByText(/Practice 1/i)).toBeVisible();
 
   const questionScan = await new AxeBuilder({ page }).analyze();
   expect(
