@@ -11,6 +11,7 @@
 
 import { badges } from "./badges";
 import { hssSubject } from "./subjects/hss";
+import { languagesSubject } from "./subjects/languages";
 import { mathsSubject } from "./subjects/maths";
 import { scienceSubject } from "./subjects/science";
 import { algebraTrack } from "./tracks/algebra";
@@ -23,6 +24,7 @@ import { perimeterAndAreaTrack } from "./tracks/perimeterAndArea";
 import { pythagorasTrack } from "./tracks/pythagoras";
 import { quadrilateralsTrack } from "./tracks/quadrilaterals";
 import { spanishConquestTrack } from "./tracks/spanishConquest";
+import { germanWirReisenTrack } from "./tracks/germanWirReisen";
 import { timeTrack } from "./tracks/time";
 import { volumeTrack } from "./tracks/volume";
 import { validateContent } from "../domain/content/validateContent";
@@ -38,7 +40,7 @@ import type {
 
 /** The complete authored content shipped with the app. */
 export const appContent: AppContent = {
-  subjects: [hssSubject, mathsSubject, scienceSubject],
+  subjects: [languagesSubject, hssSubject, mathsSubject, scienceSubject],
   tracks: [
     algebraTrack,
     biologyTrack,
@@ -50,6 +52,7 @@ export const appContent: AppContent = {
     pythagorasTrack,
     quadrilateralsTrack,
     spanishConquestTrack,
+    germanWirReisenTrack,
     timeTrack,
     volumeTrack,
   ],

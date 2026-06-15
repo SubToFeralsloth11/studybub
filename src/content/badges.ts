@@ -216,4 +216,18 @@ export const badges: Badge[] = [
     criterion: "boss-pass:earth-science-rocks",
     icon: "🏆",
   },
+  {
+    id: "german-wir-reisen-master",
+    title: "Weltenbummler",
+    description: "Finish every German: Wir reisen! lesson",
+    criterion: "track-complete:german-wir-reisen",
+    icon: "✈️",
+  },
+  {
+    id: "boss-german-wir-reisen",
+    title: "German boss slayer",
+    description: "Pass the German: Wir reisen! boss challenge",
+    criterion: "boss-pass:german-wir-reisen",
+    icon: "🏆",
+  },
 ];
