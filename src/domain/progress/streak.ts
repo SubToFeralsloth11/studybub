@@ -47,3 +47,29 @@ export function nextStreak(current: Streak, today: string): Streak {
   if (diff === 1) return { count: current.count + 1, lastActiveDate: today };
   return { count: 1, lastActiveDate: today };
 }
+
+/**
+ * Returns a contextual message for the streak popover based on the current
+ * streak state.
+ *
+ * @param count - The current streak count in days.
+ * @param isTodayActive - Whether the learner was active today.
+ * @param lastActiveIsYesterday - Whether the last active date was yesterday.
+ * @returns A human-readable message string.
+ */
+export function streakMessage(
+  count: number,
+  isTodayActive: boolean,
+  lastActiveIsYesterday: boolean,
+): string {
+  if (count === 0) {
+    return "Complete a lesson to start your streak!";
+  }
+  if (isTodayActive) {
+    return "Active today — come back tomorrow to keep it going!";
+  }
+  if (!lastActiveIsYesterday) {
+    return "Your streak has reset. Start a new one today!";
+  }
+  return `You haven't practised today. Come back to keep your ${count}-day streak!`;
+}

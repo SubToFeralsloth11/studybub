@@ -57,6 +57,8 @@ export interface SavedState {
   streak: Streak;
   /** Earned badge ids (unique). */
   badges: BadgeId[];
+  /** Sorted array of distinct YYYY-MM-DD dates when the learner was active, capped at 90 entries. */
+  activeDates: string[];
 }
 
 /**
@@ -72,6 +74,7 @@ export function defaultState(): SavedState {
     xp: 0,
     streak: { count: 0, lastActiveDate: "" },
     badges: [],
+    activeDates: [],
   };
 }
 
@@ -143,7 +146,9 @@ function isSavedState(value: unknown): value is SavedState {
     typeof streak.count === "number" &&
     typeof streak.lastActiveDate === "string" &&
     isRecordOf(record.lessons, isLessonProgress) &&
-    isRecordOf(record.challenges, isChallengeResult)
+    isRecordOf(record.challenges, isChallengeResult) &&
+    Array.isArray(record.activeDates) &&
+    record.activeDates.every((d) => typeof d === "string")
   );
 }
 

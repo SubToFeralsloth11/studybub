@@ -1,10 +1,45 @@
 import { describe, expect, it } from "vitest";
 
-import { nextStreak } from "./streak";
+import { nextStreak, streakMessage } from "./streak";
 
 import type { Streak } from "../persistence/schema";
 
 const fresh: Streak = { count: 0, lastActiveDate: "" };
+
+describe("streakMessage", () => {
+  it("prompts to start when there is no streak", () => {
+    const msg = streakMessage(0, false, false);
+    expect(msg).toContain("start your streak");
+  });
+
+  it("encourages continued activity when active today", () => {
+    const msg = streakMessage(5, true, false);
+    expect(msg).toContain("Active today");
+    expect(msg).toContain("come back tomorrow");
+  });
+
+  it("warns when the streak has reset (not active today, not yesterday)", () => {
+    const msg = streakMessage(3, false, false);
+    expect(msg).toContain("reset");
+    expect(msg).toContain("Start a new one");
+  });
+
+  it("warns when the streak is at risk (not active today, last active yesterday)", () => {
+    const msg = streakMessage(5, false, true);
+    expect(msg).toContain("haven't practised today");
+    expect(msg).toContain("5-day streak");
+  });
+
+  it("handles a streak of 1 with active today", () => {
+    const msg = streakMessage(1, true, false);
+    expect(msg).toContain("Active today");
+  });
+
+  it("handles a streak of 1 with risk (last active yesterday)", () => {
+    const msg = streakMessage(1, false, true);
+    expect(msg).toContain("1-day streak");
+  });
+});
 
 describe("nextStreak", () => {
   it("sets the streak to 1 on first-ever activity", () => {

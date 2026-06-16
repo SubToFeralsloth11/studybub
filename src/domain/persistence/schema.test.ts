@@ -21,6 +21,13 @@ function populatedState(): SavedState {
     xp: 320,
     streak: { count: 5, lastActiveDate: "2026-06-07" },
     badges: ["first-lesson", "perfect-mastery"],
+    activeDates: [
+      "2026-06-03",
+      "2026-06-04",
+      "2026-06-05",
+      "2026-06-06",
+      "2026-06-07",
+    ],
   };
 }
 
@@ -34,6 +41,7 @@ describe("defaultState", () => {
       xp: 0,
       streak: { count: 0, lastActiveDate: "" },
       badges: [],
+      activeDates: [],
     });
   });
 
@@ -43,6 +51,30 @@ describe("defaultState", () => {
     a.lessons["x"] = { completed: true, bestAccuracy: 1 };
     // Mutating one must not leak into the other.
     expect(b.lessons).toEqual({});
+  });
+});
+
+describe("activeDates validation", () => {
+  it("round-trips a state with empty activeDates", () => {
+    const state = { ...populatedState(), activeDates: [] };
+    expect(parseSavedState(JSON.stringify(state))).toEqual(state);
+  });
+
+  it("recovers to default when activeDates is missing from JSON", () => {
+    // Serialise without activeDates to simulate old-format data.
+    const { activeDates: _, ...withoutActiveDates } = populatedState();
+    const result = parseSavedState(JSON.stringify(withoutActiveDates));
+    expect(result).toEqual(defaultState());
+  });
+
+  it("recovers to default when activeDates is not an array", () => {
+    const broken = { ...populatedState(), activeDates: "not-an-array" };
+    expect(parseSavedState(JSON.stringify(broken))).toEqual(defaultState());
+  });
+
+  it("recovers to default when activeDates contains non-string elements", () => {
+    const broken = { ...populatedState(), activeDates: ["2026-06-05", 42] };
+    expect(parseSavedState(JSON.stringify(broken))).toEqual(defaultState());
   });
 });
 
