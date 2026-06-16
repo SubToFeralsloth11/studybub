@@ -611,7 +611,7 @@ describe("validateContent - matching question validation", () => {
     expect(validateContent(content).join("\n")).toMatch(/duplicate pair id/);
   });
 
-  it("flags a matching question with empty pair content", () => {
+  it("flags a matching question with empty left pair content", () => {
     const content = validContent();
     const match: Question = {
       id: "m1",
@@ -633,9 +633,32 @@ describe("validateContent - matching question validation", () => {
       ],
     };
     content.tracks[0].lessons[0].practice = [match];
-    expect(validateContent(content).join("\n")).toMatch(
-      /empty (left|right) content/,
-    );
+    expect(validateContent(content).join("\n")).toMatch(/empty left content/);
+  });
+
+  it("flags a matching question with empty right pair content", () => {
+    const content = validContent();
+    const match: Question = {
+      id: "m1",
+      type: "matching",
+      prompt: [{ kind: "text", text: "Match items" }],
+      explanation: [{ kind: "text", text: "A goes with B." }],
+      xp: 10,
+      pairs: [
+        {
+          id: "p1",
+          left: [{ kind: "text", text: "H2O" }],
+          right: [],
+        },
+        {
+          id: "p2",
+          left: [{ kind: "text", text: "CO2" }],
+          right: [{ kind: "text", text: "Carbon dioxide" }],
+        },
+      ],
+    };
+    content.tracks[0].lessons[0].practice = [match];
+    expect(validateContent(content).join("\n")).toMatch(/empty right content/);
   });
 
   it("accepts a well-formed matching question", () => {
@@ -716,5 +739,115 @@ describe("validateContent - aiProvenance validation", () => {
       role: "both",
     };
     expect(validateContent(content)).toEqual([]);
+  });
+});
+
+// --- Additional validation coverage ---
+
+describe("validateContent - MCQ duplicate options", () => {
+  it("flags an MCQ with duplicate option ids", () => {
+    const content = validContent();
+    (content.tracks[0].lessons[0].practice[0] as McqQuestion).options = [
+      { id: "a", label: [{ kind: "text", text: "A" }] },
+      { id: "a", label: [{ kind: "text", text: "A again" }] },
+    ];
+    expect(validateContent(content).join("\n")).toMatch(/duplicate option ids/);
+  });
+});
+
+describe("validateContent - expression with no variables", () => {
+  it("flags an expression question with no declared variables", () => {
+    const content = validContent();
+    const expression: Question = {
+      id: "e1",
+      type: "expression",
+      prompt: [{ kind: "text", text: "What is 2+2?" }],
+      explanation: [{ kind: "text", text: "4" }],
+      xp: 10,
+      target: "2+2",
+      variables: [],
+    };
+    content.tracks[0].lessons[0].practice = [expression];
+    expect(validateContent(content).join("\n")).toMatch(
+      /declares no variables/,
+    );
+  });
+});
+
+describe("validateContent - lesson structure", () => {
+  it("flags a lesson with no learn cards", () => {
+    const content = validContent();
+    content.tracks[0].lessons[0].learnCards = [];
+    expect(validateContent(content).join("\n")).toMatch(/no learn cards/);
+  });
+
+  it("flags a lesson with no practice questions", () => {
+    const content = validContent();
+    content.tracks[0].lessons[0].practice = [];
+    expect(validateContent(content).join("\n")).toMatch(
+      /no practice questions/,
+    );
+  });
+
+  it("flags a lesson with no mastery questions", () => {
+    const content = validContent();
+    content.tracks[0].lessons[0].mastery = [];
+    expect(validateContent(content).join("\n")).toMatch(/no mastery questions/);
+  });
+
+  it("flags invalid passThreshold", () => {
+    const content = validContent();
+    content.tracks[0].lessons[0].passThreshold = 0;
+    expect(validateContent(content).join("\n")).toMatch(
+      /passThreshold must be in/,
+    );
+  });
+
+  it("flags duplicate learn-card ids", () => {
+    const content = validContent();
+    const dupId = content.tracks[0].lessons[0].learnCards[0].id;
+    // Push a second card with the same id.
+    content.tracks[0].lessons[0].learnCards.push({
+      id: dupId,
+      heading: "Duplicate",
+      body: [{ kind: "text", text: "Dup" }],
+    });
+    expect(validateContent(content).join("\n")).toMatch(
+      /duplicate learn-card ids/,
+    );
+  });
+});
+
+describe("validateContent - missing subject fields", () => {
+  it("flags a subject with an empty id", () => {
+    const content = validContent();
+    content.subjects[0].id = "";
+    expect(validateContent(content).join("\n")).toMatch(/empty id/);
+  });
+
+  it("flags a subject with an empty description", () => {
+    const content = validContent();
+    content.subjects[0].description = "";
+    expect(validateContent(content).join("\n")).toMatch(/empty description/);
+  });
+
+  it("flags a subject with an empty icon", () => {
+    const content = validContent();
+    content.subjects[0].icon = "";
+    expect(validateContent(content).join("\n")).toMatch(/empty icon/);
+  });
+
+  it("flags a subject with an invalid accent colour", () => {
+    const content = validContent();
+    content.subjects[0].accent = "not-a-colour";
+    expect(validateContent(content).join("\n")).toMatch(/invalid accent/);
+  });
+});
+
+describe("validateContent - duplicate badge ids", () => {
+  it("flags duplicate badge ids across content", () => {
+    const content = validContent();
+    content.badges.push({ ...content.badges[0] });
+    expect(validateContent(content).join("\n")).toMatch(/Duplicate badge ids/);
   });
 });
