@@ -4,9 +4,8 @@ import { defineConfig } from "vite";
 
 // Vite configuration for the StudyBub single-page application.
 // React Fast Refresh and Tailwind v4 are wired in via plugins; no PostCSS step is needed.
-// The base path is only set for production builds (e.g. GitHub Pages).
-// In dev mode the base is "/" so that routes work without the repo-name prefix.
-export default defineConfig(({ mode }) => ({
-  base: mode === "production" ? "/studybub/" : "/",
+// Base is "/" because the app is served from a custom domain (syntaxrewrite.com).
+export default defineConfig({
+  base: "/",
   plugins: [react(), tailwindcss()],
-}));
+});

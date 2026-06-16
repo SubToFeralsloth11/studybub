@@ -159,7 +159,7 @@ jobs:
       - name: Build for GitHub Pages
         run: |
           bunx tsc -b
-          bunx vite build --base "/${{ github.event.repository.name }}/"
+          bunx vite build --base "/"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
