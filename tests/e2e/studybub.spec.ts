@@ -53,6 +53,7 @@ async function seedCompleteTimeTrack(
     xp: 0,
     streak: { count: 0, lastActiveDate: "" },
     badges: [],
+    activeDates: [],
     ...overrides,
   });
 }
@@ -232,6 +233,7 @@ test("progress reset is guarded by a confirmation", async ({ page }) => {
     xp: 250,
     streak: { count: 4, lastActiveDate: "2026-06-07" },
     badges: ["first-steps"],
+    activeDates: ["2026-06-07"],
   });
   await page.goto("/");
   await page.getByRole("button", { name: /reset progress/i }).click();
