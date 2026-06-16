@@ -51,6 +51,7 @@ const sample: SavedState = {
   xp: 50,
   streak: { count: 1, lastActiveDate: "2026-06-07" },
   badges: ["first-lesson"],
+  activeDates: ["2026-06-07"],
 };
 
 beforeEach(() => {

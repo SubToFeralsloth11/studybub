@@ -98,6 +98,7 @@ function seedAllLessonsComplete() {
       xp: 0,
       streak: { count: 0, lastActiveDate: "" },
       badges: [],
+      activeDates: [],
     }),
   );
 }

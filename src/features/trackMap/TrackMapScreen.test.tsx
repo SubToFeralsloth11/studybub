@@ -87,6 +87,7 @@ describe("TrackMapScreen", () => {
         xp: 50,
         streak: { count: 1, lastActiveDate: "2026-06-07" },
         badges: [],
+        activeDates: [],
       }),
     );
     renderMap();

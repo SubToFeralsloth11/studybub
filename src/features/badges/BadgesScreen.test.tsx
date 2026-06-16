@@ -43,6 +43,7 @@ describe("BadgesScreen", () => {
         xp: 0,
         streak: { count: 0, lastActiveDate: "" },
         badges: ["first-steps"],
+        activeDates: [],
       }),
     );
     renderApp(<BadgesScreen />, { content });
