@@ -11,6 +11,35 @@ import type { AppContent } from "../domain/content/types";
 
 const emptyContent: AppContent = { subjects: [], tracks: [], badges: [] };
 
+/**
+ * Returns a local-date string (YYYY-MM-DD) offset by the given number of days
+ * from today.
+ *
+ * @param offset - Days from today (0 = today, -1 = yesterday, etc.).
+ * @returns The local date string.
+ */
+function relativeDate(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  const yyyy = d.getFullYear().toString().padStart(4, "0");
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  const dd = d.getDate().toString().padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Produces an array of consecutive active-date strings ending at today for the
+ * given number of days.
+ *
+ * @param days - How many consecutive days to include.
+ * @returns Sorted YYYY-MM-DD strings.
+ */
+function consecutiveDates(days: number): string[] {
+  return Array.from({ length: days }, (_, index) =>
+    relativeDate(index - days + 1),
+  );
+}
+
 /** Seeds localStorage with the given state before the provider hydrates. */
 function seedProgress(saved: SavedState): void {
   localStorage.setItem("studybub.progress.v1", JSON.stringify(saved));
@@ -33,20 +62,15 @@ describe("RewardBar streak popover", () => {
 
   it("opens the streak popover on chip click", async () => {
     const user = userEvent.setup();
-    seedProgress({
+    const yesterday = relativeDate(-1);
+    const state = {
       ...defaultState(),
-      streak: { count: 3, lastActiveDate: "2026-06-16" },
-      activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
-    });
+      streak: { count: 3, lastActiveDate: yesterday },
+      activeDates: consecutiveDates(7),
+    };
+    seedProgress(state);
     // Force the hydrated state to re-read from localStorage.
-    localStorage.setItem(
-      "studybub.progress.v1",
-      JSON.stringify({
-        ...defaultState(),
-        streak: { count: 3, lastActiveDate: "2026-06-16" },
-        activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
-      }),
-    );
+    localStorage.setItem("studybub.progress.v1", JSON.stringify(state));
 
     renderRewardBar();
 
@@ -54,27 +78,28 @@ describe("RewardBar streak popover", () => {
     await user.click(chip);
 
     // The popover should show the streak count and activity strip.
-    expect(screen.getByText(/3-day streak/i)).toBeInTheDocument();
+    expect(screen.getByText(/🔥.*3-day streak/)).toBeInTheDocument();
     expect(screen.getByText(/Recent activity/i)).toBeInTheDocument();
   });
 
   it("dismisses the streak popover when clicking the chip again", async () => {
     const user = userEvent.setup();
+    const yesterday = relativeDate(-1);
     seedProgress({
       ...defaultState(),
-      streak: { count: 2, lastActiveDate: "2026-06-16" },
-      activeDates: ["2026-06-15", "2026-06-16"],
+      streak: { count: 2, lastActiveDate: yesterday },
+      activeDates: consecutiveDates(7),
     });
 
     renderRewardBar();
 
     const chip = screen.getByLabelText("2 day streak");
     await user.click(chip);
-    expect(screen.getByText(/2-day streak/i)).toBeInTheDocument();
+    expect(screen.getByText(/🔥.*2-day streak/)).toBeInTheDocument();
 
     await user.click(chip);
     await waitFor(() => {
-      expect(screen.queryByText(/2-day streak/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/🔥.*2-day streak/)).not.toBeInTheDocument();
     });
   });
 
@@ -181,36 +206,38 @@ describe("RewardBar mutual exclusion", () => {
 
   it("closes the streak popover when opening the level popover", async () => {
     const user = userEvent.setup();
+    const yesterday = relativeDate(-1);
     seedProgress({
       ...defaultState(),
       xp: 50,
-      streak: { count: 3, lastActiveDate: "2026-06-16" },
-      activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
+      streak: { count: 3, lastActiveDate: yesterday },
+      activeDates: consecutiveDates(7),
     });
 
     renderRewardBar();
 
     // Open streak popover.
     await user.click(screen.getByLabelText("3 day streak"));
-    expect(screen.getByText(/3-day streak/i)).toBeInTheDocument();
+    expect(screen.getByText(/🔥.*3-day streak/)).toBeInTheDocument();
 
     // Open level popover.
     await user.click(screen.getByLabelText(/Level/));
 
     // Streak popover should be gone, level popover present.
     await waitFor(() => {
-      expect(screen.queryByText(/3-day streak/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/🔥.*3-day streak/)).not.toBeInTheDocument();
     });
     expect(screen.getByText(/XP to Level/)).toBeInTheDocument();
   });
 
   it("closes the level popover when opening the streak popover", async () => {
     const user = userEvent.setup();
+    const yesterday = relativeDate(-1);
     seedProgress({
       ...defaultState(),
       xp: 50,
-      streak: { count: 3, lastActiveDate: "2026-06-16" },
-      activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
+      streak: { count: 3, lastActiveDate: yesterday },
+      activeDates: consecutiveDates(7),
     });
 
     renderRewardBar();
@@ -226,6 +253,6 @@ describe("RewardBar mutual exclusion", () => {
     await waitFor(() => {
       expect(screen.queryByText(/XP to Level/)).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/3-day streak/i)).toBeInTheDocument();
+    expect(screen.getByText(/🔥.*3-day streak/)).toBeInTheDocument();
   });
 });

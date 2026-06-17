@@ -1,6 +1,35 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
+ * Returns a local-date string (YYYY-MM-DD) offset by the given number of days
+ * from today. Negative values produce past dates.
+ *
+ * @param offset - Days from today (0 = today, -1 = yesterday, etc.).
+ * @returns The local date string.
+ */
+function relativeDate(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  const yyyy = d.getFullYear().toString().padStart(4, "0");
+  const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+  const dd = d.getDate().toString().padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Produces an array of consecutive active-date strings ending at today for the
+ * given number of days.
+ *
+ * @param days - How many consecutive days to include.
+ * @returns Sorted YYYY-MM-DD strings.
+ */
+function consecutiveDates(days: number): string[] {
+  return Array.from({ length: days }, (_, index) =>
+    relativeDate(index - days + 1),
+  );
+}
+
+/**
  * Seeds the saved-progress key before the app loads with the given saved state.
  *
  * @param page - The Playwright page.
@@ -25,22 +54,24 @@ test.beforeEach(async () => {
 test("streak popover opens on chip click and shows the 7-day strip", async ({
   page,
 }) => {
+  const yesterday = relativeDate(-1);
   await seedProgress(page, {
     version: 1,
     lessons: {},
     challenges: {},
     xp: 50,
-    streak: { count: 3, lastActiveDate: "2026-06-16" },
+    streak: { count: 3, lastActiveDate: yesterday },
     badges: [],
-    activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
+    activeDates: consecutiveDates(7),
   });
   await page.goto("/");
 
   const chip = page.getByLabel("3 day streak");
   await chip.click();
 
-  // Popover content should be visible.
-  await expect(page.getByText("3-day streak")).toBeVisible();
+  // Popover content should be visible. Use the emoji to uniquely target
+  // the heading (the contextual message may also contain the streak count).
+  await expect(page.getByText("🔥 3-day streak")).toBeVisible();
   await expect(page.getByText("Recent activity")).toBeVisible();
   // Seven day cells should be present.
   await expect(page.getByLabel(/Mon/)).toBeVisible();
@@ -50,20 +81,15 @@ test("streak popover opens on chip click and shows the 7-day strip", async ({
 test("streak popover shows contextual message for active today", async ({
   page,
 }) => {
+  const today = relativeDate(0);
   await seedProgress(page, {
     version: 1,
     lessons: {},
     challenges: {},
     xp: 0,
-    streak: { count: 5, lastActiveDate: "2026-06-16" },
+    streak: { count: 5, lastActiveDate: today },
     badges: [],
-    activeDates: [
-      "2026-06-12",
-      "2026-06-13",
-      "2026-06-14",
-      "2026-06-15",
-      "2026-06-16",
-    ],
+    activeDates: consecutiveDates(5),
   });
   await page.goto("/");
 
@@ -115,78 +141,82 @@ test("level popover opens on badge click and shows XP progress", async ({
 });
 
 test("streak popover dismisses on click outside", async ({ page }) => {
+  const yesterday = relativeDate(-1);
   await seedProgress(page, {
     version: 1,
     lessons: {},
     challenges: {},
     xp: 0,
-    streak: { count: 3, lastActiveDate: "2026-06-16" },
+    streak: { count: 3, lastActiveDate: yesterday },
     badges: [],
-    activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
+    activeDates: consecutiveDates(7),
   });
   await page.goto("/");
 
   await page.getByLabel("3 day streak").click();
-  await expect(page.getByText("3-day streak")).toBeVisible();
+  await expect(page.getByText("🔥 3-day streak")).toBeVisible();
 
   // Click outside (on the StudyBub logo).
   await page.getByText("StudyBub").click();
-  await expect(page.getByText("3-day streak")).not.toBeVisible();
+  await expect(page.getByText("🔥 3-day streak")).not.toBeVisible();
 });
 
 test("streak popover dismisses on Escape key", async ({ page }) => {
+  const yesterday = relativeDate(-1);
   await seedProgress(page, {
     version: 1,
     lessons: {},
     challenges: {},
     xp: 0,
-    streak: { count: 3, lastActiveDate: "2026-06-16" },
+    streak: { count: 3, lastActiveDate: yesterday },
     badges: [],
-    activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
+    activeDates: consecutiveDates(7),
   });
   await page.goto("/");
 
   await page.getByLabel("3 day streak").click();
-  await expect(page.getByText("3-day streak")).toBeVisible();
+  await expect(page.getByText("🔥 3-day streak")).toBeVisible();
 
   await page.keyboard.press("Escape");
-  await expect(page.getByText("3-day streak")).not.toBeVisible();
+  await expect(page.getByText("🔥 3-day streak")).not.toBeVisible();
 });
 
 test("mutual exclusion: opening level popover closes streak popover", async ({
   page,
 }) => {
+  const yesterday = relativeDate(-1);
   await seedProgress(page, {
     version: 1,
     lessons: {},
     challenges: {},
     xp: 50,
-    streak: { count: 3, lastActiveDate: "2026-06-16" },
+    streak: { count: 3, lastActiveDate: yesterday },
     badges: [],
-    activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
+    activeDates: consecutiveDates(7),
   });
   await page.goto("/");
 
   // Open streak popover.
   await page.getByLabel("3 day streak").click();
-  await expect(page.getByText("3-day streak")).toBeVisible();
+  await expect(page.getByText("🔥 3-day streak")).toBeVisible();
 
   // Open level popover.
   await page.getByLabel(/Level/).click();
   // Streak popover should be gone, level popover visible.
-  await expect(page.getByText("3-day streak")).not.toBeVisible();
+  await expect(page.getByText("🔥 3-day streak")).not.toBeVisible();
   await expect(page.getByText(/XP to Level/)).toBeVisible();
 });
 
 test("popovers remain visible at 320 px viewport width", async ({ page }) => {
+  const yesterday = relativeDate(-1);
   await seedProgress(page, {
     version: 1,
     lessons: {},
     challenges: {},
     xp: 50,
-    streak: { count: 3, lastActiveDate: "2026-06-16" },
+    streak: { count: 3, lastActiveDate: yesterday },
     badges: [],
-    activeDates: ["2026-06-14", "2026-06-15", "2026-06-16"],
+    activeDates: consecutiveDates(7),
   });
   await page.setViewportSize({ width: 320, height: 600 });
   await page.goto("/");
@@ -194,7 +224,7 @@ test("popovers remain visible at 320 px viewport width", async ({ page }) => {
   await page.getByLabel("3 day streak").click();
 
   // The popover should be visible within the viewport.
-  const popover = page.getByText("3-day streak");
+  const popover = page.getByText("🔥 3-day streak");
   await expect(popover).toBeVisible();
 
   // The popover box should be within the viewport bounds.
