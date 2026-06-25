@@ -1,16 +1,13 @@
-import {
-  startAuthentication,
-} from "@simplewebauthn/browser";
+import { startAuthentication } from "@simplewebauthn/browser";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import {
   getPasskeyAuthenticationOptions,
   verifyPasskeyAuthentication,
 } from "../server/api/auth";
-
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
 
 /**
  * The login screen. Displays a "Sign in with passkey" button that triggers
@@ -42,17 +39,17 @@ function LoginScreen() {
       // The server creates a session and redirects to the home page on
       // success.
       await verifyPasskeyAuthentication({ data: { credential } });
-    } catch (err) {
+    } catch (error_) {
       // The server may throw a redirect to / on success, which appears as
       // an error in the catch block. Ignore that case.
-      if (err instanceof Error) {
-        if (err.message.includes("redirect")) {
+      if (error_ instanceof Error) {
+        if (error_.message.includes("redirect")) {
           return; // Success - the router will handle the redirect.
         }
-        if (err.name === "NotAllowedError") {
+        if (error_.name === "NotAllowedError") {
           setError("Sign-in was cancelled.");
         } else {
-          setError(err.message || "Sign-in failed. Please try again.");
+          setError(error_.message || "Sign-in failed. Please try again.");
         }
       }
     } finally {
@@ -63,12 +60,8 @@ function LoginScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface p-4">
       <Card className="w-full max-w-sm p-8 text-center">
-        <h1 className="font-display text-2xl font-bold text-ink">
-          StudyBub
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          Sign in to continue learning
-        </p>
+        <h1 className="font-display text-2xl font-bold text-ink">StudyBub</h1>
+        <p className="mt-2 text-sm text-muted">Sign in to continue learning</p>
 
         {error && (
           <p className="mt-4 rounded-bub bg-warn/10 px-3 py-2 text-sm text-warn">

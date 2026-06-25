@@ -2,6 +2,7 @@
 // Run with: bun run scripts/migrate.ts <command> [options]
 
 import { Database } from "bun:sqlite";
+import { readFileSync } from "node:fs";
 
 import { parseSavedState } from "../src/domain/persistence/schema";
 
@@ -11,9 +12,8 @@ import { parseSavedState } from "../src/domain/persistence/schema";
  * @param path - Optional path to the database file.
  * @returns The database instance.
  */
-function openDatabase(path?: string): Database {
-  const dbPath = path ?? "studybub.db";
-  const db = new Database(dbPath);
+function openDatabase(path = "studybub.db"): Database {
+  const db = new Database(path);
   db.run("PRAGMA journal_mode = WAL");
   db.run("PRAGMA foreign_keys = ON");
   return db;
@@ -74,10 +74,10 @@ function initSchema(db: Database): void {
 function generateToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+  return btoa(String.fromCodePoint(...bytes))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
 }
 
 /**
@@ -88,11 +88,7 @@ function generateToken(): string {
  * @param displayName - The learner's display name.
  * @param baseUrl - The base URL for the invitation link.
  */
-function inviteUser(
-  db: Database,
-  displayName: string,
-  baseUrl: string,
-): void {
+function inviteUser(db: Database, displayName: string, baseUrl: string): void {
   const userId = crypto.randomUUID();
   const token = generateToken();
   const now = new Date().toISOString();
@@ -124,30 +120,6 @@ function inviteUser(
 }
 
 /**
- * Reads a file from disk and returns its contents as a string.
- *
- * @param path - The path to the file.
- * @returns The file contents.
- */
-function readFile(path: string): string {
-  try {
-    return Bun.file(path).textSync
-      ? (Bun.file(path) as unknown as { textSync: () => string }).textSync
-        ? (() => {
-            const f = Bun.file(path);
-            // Bun.file returns a Blob-like; use the sync API if available.
-            const content = require("node:fs").readFileSync(path, "utf-8");
-            return content;
-          })()
-        : require("node:fs").readFileSync(path, "utf-8")
-      : require("node:fs").readFileSync(path, "utf-8");
-  } catch {
-    console.error(`Error: Could not read file: ${path}`);
-    process.exit(1);
-  }
-}
-
-/**
  * Imports progress (and optionally AI config) from JSON files into a
  * specified user's database profile.
  *
@@ -160,7 +132,7 @@ function importProgress(
   db: Database,
   userId: string,
   progressFile: string,
-  aiConfigFile?: string,
+  _aiConfigFile?: string,
 ): void {
   // Verify the user exists.
   const user = db
@@ -173,7 +145,7 @@ function importProgress(
   }
 
   // Read and validate the progress JSON.
-  const progressRaw = require("node:fs").readFileSync(progressFile, "utf-8");
+  const progressRaw = readFileSync(progressFile, "utf8");
   if (!progressRaw || progressRaw.trim() === "") {
     console.error("Error: Progress file is empty.");
     process.exit(1);
@@ -188,7 +160,7 @@ function importProgress(
   }
 
   const savedState = parseSavedState(
-    typeof progressJson === "object" ? progressRaw : null,
+    typeof progressJson === "object" ? progressRaw : undefined,
   );
 
   // If parseSavedState fell back to default, the input was invalid.
@@ -207,10 +179,11 @@ function importProgress(
   const now = new Date().toISOString();
 
   // Update the user's progress.
-  db.run(
-    "UPDATE users SET progress_json = ?, updated_at = ? WHERE id = ?",
-    [JSON.stringify(savedState), now, userId],
-  );
+  db.run("UPDATE users SET progress_json = ?, updated_at = ? WHERE id = ?", [
+    JSON.stringify(savedState),
+    now,
+    userId,
+  ]);
 
   const lessonCount = Object.keys(savedState.lessons).length;
   const challengeCount = Object.keys(savedState.challenges).length;
@@ -221,7 +194,7 @@ function importProgress(
   );
 
   // Handle optional AI config file.
-  if (aiConfigFile) {
+  if (_aiConfigFile) {
     console.log("AI config import is not yet implemented.");
   }
 }
@@ -301,9 +274,7 @@ if (command === "invite") {
 
   const progressFileIndex = args.indexOf("--progress-file");
   if (progressFileIndex === -1 || !args[progressFileIndex + 1]) {
-    console.error(
-      "Error: --progress-file is required for the import command.",
-    );
+    console.error("Error: --progress-file is required for the import command.");
     process.exit(1);
   }
   const progressFile = args[progressFileIndex + 1];

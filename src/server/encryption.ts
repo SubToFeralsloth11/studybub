@@ -22,7 +22,7 @@ export function resetEncryptionKey(): void {
 function getKeyBytes(): Uint8Array {
   if (keyBytes) return keyBytes;
 
-  const hexKey = process.env.ENCRYPTION_KEY;
+  const hexKey = Bun.env.ENCRYPTION_KEY;
   if (!hexKey) {
     throw new Error(
       "ENCRYPTION_KEY environment variable is not set. " +
@@ -31,9 +31,7 @@ function getKeyBytes(): Uint8Array {
   }
 
   if (hexKey.length !== 64) {
-    throw new Error(
-      "ENCRYPTION_KEY must be 64 hex characters (32 bytes).",
-    );
+    throw new Error("ENCRYPTION_KEY must be 64 hex characters (32 bytes).");
   }
 
   const bytes = new Uint8Array(32);
@@ -51,7 +49,7 @@ function getKeyBytes(): Uint8Array {
  */
 async function getCryptoKey(): Promise<CryptoKey> {
   const keyData = getKeyBytes();
-  return crypto.subtle.importKey("raw", keyData, "AES-GCM", false, [
+  return crypto.subtle.importKey("raw", keyData as any, "AES-GCM", false, [
     "encrypt",
     "decrypt",
   ]);
@@ -73,18 +71,28 @@ export async function encryptAiConfig(config: AiConfig): Promise<{
   authTag: string;
 }> {
   const cryptoKey = await getCryptoKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const iv = crypto.getRandomValues(
+    new Uint8Array(12),
+  ) as unknown as Uint8Array;
   const plaintext = new TextEncoder().encode(JSON.stringify(config));
 
   const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv: iv as any },
     cryptoKey,
-    plaintext,
+    plaintext as any,
   );
 
   // The Web Crypto API returns ciphertext || authTag (last 16 bytes).
-  const ciphertextBytes = new Uint8Array(encrypted, 0, encrypted.byteLength - 16);
-  const authTagBytes = new Uint8Array(encrypted, encrypted.byteLength - 16, 16);
+  const ciphertextBytes = new Uint8Array(
+    encrypted as ArrayBuffer,
+    0,
+    (encrypted as ArrayBuffer).byteLength - 16,
+  );
+  const authTagBytes = new Uint8Array(
+    encrypted as ArrayBuffer,
+    (encrypted as ArrayBuffer).byteLength - 16,
+    16,
+  );
 
   return {
     ciphertext: bytesToHex(ciphertextBytes),
@@ -119,9 +127,9 @@ export async function decryptAiConfig(
 
   try {
     const decrypted = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: ivBytes },
+      { name: "AES-GCM", iv: ivBytes as any },
       cryptoKey,
-      combined,
+      combined as any,
     );
     const json = new TextDecoder().decode(decrypted);
     return JSON.parse(json) as AiConfig;

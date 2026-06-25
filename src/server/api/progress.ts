@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { getDatabase } from "../../server/db";
-import { useAppSession } from "../../server/session";
 import {
   defaultState,
   parseSavedState,
   type SavedState,
 } from "../../domain/persistence/schema";
+import { getDatabase } from "../../server/db";
+import { useAppSession } from "../../server/session";
 
 /**
  * Retrieves the authenticated user's ID from the session, throwing a 401
@@ -55,10 +55,11 @@ export const saveProgress = createServerFn({ method: "POST" })
     const db = getDatabase();
     const now = new Date().toISOString();
 
-    db.run(
-      "UPDATE users SET progress_json = ?, updated_at = ? WHERE id = ?",
-      [JSON.stringify(data.state), now, userId],
-    );
+    db.run("UPDATE users SET progress_json = ?, updated_at = ? WHERE id = ?", [
+      JSON.stringify(data.state),
+      now,
+      userId,
+    ]);
 
     return { ok: true };
   });
@@ -73,10 +74,11 @@ export const resetProgress = createServerFn({ method: "POST" }).handler(
     const now = new Date().toISOString();
     const fresh = defaultState();
 
-    db.run(
-      "UPDATE users SET progress_json = ?, updated_at = ? WHERE id = ?",
-      [JSON.stringify(fresh), now, userId],
-    );
+    db.run("UPDATE users SET progress_json = ?, updated_at = ? WHERE id = ?", [
+      JSON.stringify(fresh),
+      now,
+      userId,
+    ]);
 
     return fresh;
   },

@@ -1,16 +1,13 @@
-import {
-  startRegistration,
-} from "@simplewebauthn/browser";
+import { startRegistration } from "@simplewebauthn/browser";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import {
   getPasskeyRegistrationOptions,
   verifyPasskeyRegistration,
 } from "../server/api/auth";
-
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
 
 /**
  * The invitation registration screen. Reached via an invitation link
@@ -42,11 +39,11 @@ function InviteScreen() {
           setDisplayName(result.displayName);
           setOptionsLoaded(true);
         }
-      } catch (err) {
+      } catch (error_) {
         if (!cancelled) {
           setError(
-            err instanceof Error
-              ? err.message
+            error_ instanceof Error
+              ? error_.message
               : "Invalid invitation link.",
           );
         }
@@ -80,15 +77,15 @@ function InviteScreen() {
       await verifyPasskeyRegistration({
         data: { token, credential },
       });
-    } catch (err) {
-      if (err instanceof Error) {
-        if (err.message.includes("redirect")) {
+    } catch (error_) {
+      if (error_ instanceof Error) {
+        if (error_.message.includes("redirect")) {
           return; // Success - the router will handle the redirect.
         }
-        if (err.name === "NotAllowedError") {
+        if (error_.name === "NotAllowedError") {
           setError("Passkey registration was cancelled.");
         } else {
-          setError(err.message || "Registration failed. Please try again.");
+          setError(error_.message || "Registration failed. Please try again.");
         }
       }
     } finally {

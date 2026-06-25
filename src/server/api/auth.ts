@@ -1,22 +1,21 @@
-import { createServerFn } from "@tanstack/react-start";
 import { redirect } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+
+import { getDatabase } from "../../server/db";
+import { useAppSession } from "../../server/session";
+import {
+  generateAuthenticationOptions,
+  generateRegistrationOptions,
+  verifyAuthentication,
+  verifyRegistration,
+} from "../../server/webAuthn";
 
 import type {
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
   RegistrationResponseJSON,
 } from "@simplewebauthn/server";
-
-import { getDatabase } from "../../server/db";
-import { useAppSession } from "../../server/session";
-import {
-  generateAuthenticationOptions,
-  generateChallenge,
-  generateRegistrationOptions,
-  verifyAuthentication,
-  verifyRegistration,
-} from "../../server/webAuthn";
 
 /**
  * Gets the relying party ID and origin from the incoming request.
@@ -43,7 +42,7 @@ export const getPasskeyRegistrationOptions = createServerFn({
   .validator((data: { token: string }) => data)
   .handler(async ({ data }) => {
     const db = getDatabase();
-    const { rpId, origin } = getRpInfo();
+    const { rpId } = getRpInfo();
 
     // Look up the invite token.
     const tokenRow = db
@@ -53,7 +52,12 @@ export const getPasskeyRegistrationOptions = createServerFn({
           "WHERE t.token = ?",
       )
       .get(data.token) as
-      | { token: string; user_id: string; consumed: number; display_name: string }
+      | {
+          token: string;
+          user_id: string;
+          consumed: number;
+          display_name: string;
+        }
       | undefined;
 
     if (!tokenRow) {
@@ -93,10 +97,7 @@ export const verifyPasskeyRegistration = createServerFn({
   method: "POST",
 })
   .validator(
-    (data: {
-      token: string;
-      credential: RegistrationResponseJSON;
-    }) => data,
+    (data: { token: string; credential: RegistrationResponseJSON }) => data,
   )
   .handler(async ({ data }) => {
     const db = getDatabase();
@@ -121,7 +122,9 @@ export const verifyPasskeyRegistration = createServerFn({
     const expectedChallenge = sessionData.pendingChallenge as string;
 
     if (!expectedChallenge) {
-      throw new Error("No pending registration challenge found. Please start again.");
+      throw new Error(
+        "No pending registration challenge found. Please start again.",
+      );
     }
 
     // Verify the attestation.
@@ -194,9 +197,7 @@ export const getPasskeyAuthenticationOptions = createServerFn({
 export const verifyPasskeyAuthentication = createServerFn({
   method: "POST",
 })
-  .validator(
-    (data: { credential: AuthenticationResponseJSON }) => data,
-  )
+  .validator((data: { credential: AuthenticationResponseJSON }) => data)
   .handler(async ({ data }) => {
     const db = getDatabase();
     const { rpId, origin } = getRpInfo();

@@ -8,4 +8,4 @@ import { createServerEntry } from "@tanstack/react-start/server-entry";
 // processes incoming requests for SSR and server functions.
 const handler = createStartHandler(defaultStreamHandler);
 
-export default createServerEntry({ fetch: handler.fetch });
+export default createServerEntry({ fetch: handler });

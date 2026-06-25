@@ -158,7 +158,7 @@ describe("markAnswer — shortText", () => {
         apiKey: "sk-test",
         model: "gpt-4o",
       },
-      fetch: mockFetch as typeof globalThis.fetch,
+      fetch: mockFetch as any,
     });
     expect(result.status).toBe("correct");
   });

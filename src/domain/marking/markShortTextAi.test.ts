@@ -333,7 +333,7 @@ describe("markShortTextAi — request body shape", () => {
     );
 
     expect(fetchFn).toHaveBeenCalledOnce();
-    const callArgs = (fetchFn as ReturnType<typeof vi.fn>).mock.calls[0];
+    const callArgs = (fetchFn as any).mock.calls[0];
     const url = callArgs[0];
     const init = callArgs[1] as RequestInit;
 
@@ -387,8 +387,7 @@ describe("markShortTextAi — request body shape", () => {
     );
 
     const body = JSON.parse(
-      ((fetchFn as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit)
-        .body as string,
+      ((fetchFn as any).mock.calls[0][1] as RequestInit).body as string,
     );
     expect(body.messages[1].content).toContain(
       "Question: Solve: x squared equals 4",

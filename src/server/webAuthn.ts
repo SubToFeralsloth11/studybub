@@ -60,7 +60,13 @@ export async function verifyRegistration(
   expectedChallenge: string,
   rpId: string,
   rpOrigin: string,
-) {
+): Promise<{
+  credential: {
+    id: string;
+    publicKey: Uint8Array;
+    counter: number;
+  };
+}> {
   const verification = await verifyRegistrationResponse({
     response,
     expectedChallenge,
@@ -114,7 +120,7 @@ export async function verifyAuthentication(
     counter: number;
     transports?: AuthenticatorTransportFuture[];
   },
-) {
+): Promise<{ newCounter: number }> {
   const verification = await verifyAuthenticationResponse({
     response,
     expectedChallenge,
@@ -122,7 +128,7 @@ export async function verifyAuthentication(
     expectedRPID: rpId,
     credential: {
       id: storedCredential.credentialId,
-      publicKey: storedCredential.publicKey,
+      publicKey: storedCredential.publicKey as any,
       counter: storedCredential.counter,
       transports: storedCredential.transports,
     },
@@ -144,8 +150,8 @@ export async function verifyAuthentication(
 export function generateChallenge(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+  return btoa(String.fromCodePoint(...bytes))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
 }

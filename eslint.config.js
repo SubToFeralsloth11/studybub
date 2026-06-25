@@ -124,7 +124,11 @@ export default tseslint.config(
   // State modules intentionally co-locate a provider component with its hook,
   // so the Fast Refresh component-only rule does not apply.
   {
-    files: ["src/state/**/*.{ts,tsx}"],
+    files: [
+      "src/state/**/*.{ts,tsx}",
+      "src/routes/**/*.{ts,tsx}",
+      "src/server/**/*.ts",
+    ],
     rules: {
       "react-refresh/only-export-components": "off",
     },
@@ -140,6 +144,18 @@ export default tseslint.config(
     rules: {
       ...vitest.configs.recommended.rules,
       "unicorn/consistent-function-scoping": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+
+  // Top-level server entry point (process.exit is intentional here).
+  {
+    files: ["server.ts"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+    rules: {
+      "unicorn/no-process-exit": "off",
     },
   },
 
@@ -156,9 +172,13 @@ export default tseslint.config(
 
   // Server-side code (database, encryption, WebAuthn helpers, routes/api/).
   {
-    files: ["src/server/**/*.ts", "src/routes/api/**/*.ts"],
+    files: ["src/server/**/*.ts", "src/server/api/**/*.ts"],
     languageOptions: {
       globals: { ...globals.node },
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/rules-of-hooks": "off",
     },
   },
 
@@ -167,6 +187,10 @@ export default tseslint.config(
     files: ["scripts/**/*.ts"],
     languageOptions: {
       globals: { ...globals.node },
+    },
+    rules: {
+      "unicorn/no-process-exit": "off",
+      "unicorn/prevent-abbreviations": "off",
     },
   },
 );
