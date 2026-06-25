@@ -18,7 +18,12 @@ export const Route = createFileRoute("/invite/$token")({
   component: InviteScreen,
 });
 
-function InviteScreen() {
+/**
+ * The invitation registration screen component, exported for testing.
+ *
+ * @returns The rendered registration screen.
+ */
+export function InviteScreen() {
   const { token } = Route.useParams();
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

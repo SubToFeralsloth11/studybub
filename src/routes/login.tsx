@@ -18,7 +18,12 @@ export const Route = createFileRoute("/login")({
   component: LoginScreen,
 });
 
-function LoginScreen() {
+/**
+ * The login screen component, exported for testing.
+ *
+ * @returns The rendered login screen.
+ */
+export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

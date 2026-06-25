@@ -3,10 +3,20 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { QuestionView } from "./QuestionView";
-import { STORAGE_KEY } from "../../domain/persistence/aiConfig";
 import { renderApp } from "../../test/renderApp";
 
+import type { AiConfig } from "../../domain/persistence/aiConfig";
 import type { ShortTextQuestion } from "../../domain/content/types";
+
+// Mock the AI config server functions so the AiConfigProvider can load
+// config without a real server.
+vi.mock("../../server/api/aiConfig", () => ({
+  loadAiConfig: vi.fn().mockResolvedValue(null),
+  saveAiConfig: vi.fn().mockResolvedValue({ ok: true }),
+  clearAiConfig: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
+import { loadAiConfig } from "../../server/api/aiConfig";
 
 /** A short-text question fixture. */
 function shortTextQ(overrides?: Partial<ShortTextQuestion>): ShortTextQuestion {
@@ -21,26 +31,26 @@ function shortTextQ(overrides?: Partial<ShortTextQuestion>): ShortTextQuestion {
   };
 }
 
+/** A valid AI config fixture. */
+const validConfig: AiConfig = {
+  baseUrl: "https://example.com/v1",
+  apiKey: "sk-test",
+  model: "gpt-4o",
+};
+
 describe("QuestionView — short-text AI marking", () => {
   const onAnswered = vi.fn();
   const onContinue = vi.fn();
 
   beforeEach(() => {
-    localStorage.clear();
     onAnswered.mockClear();
     onContinue.mockClear();
+    vi.mocked(loadAiConfig).mockResolvedValue(null);
   });
 
   it("shows loading state on submit when AI is configured", async () => {
-    // Save a valid AI config so AI marking kicks in.
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        baseUrl: "https://example.com/v1",
-        apiKey: "sk-test",
-        model: "gpt-4o",
-      }),
-    );
+    // Pre-load a valid AI config so AI marking kicks in.
+    vi.mocked(loadAiConfig).mockResolvedValue(validConfig);
 
     const user = userEvent.setup();
     renderApp(
@@ -79,14 +89,7 @@ describe("QuestionView — short-text AI marking", () => {
   });
 
   it("disables submit button during loading for short-text", async () => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        baseUrl: "https://example.com/v1",
-        apiKey: "sk-test",
-        model: "gpt-4o",
-      }),
-    );
+    vi.mocked(loadAiConfig).mockResolvedValue(validConfig);
 
     const user = userEvent.setup();
     renderApp(
