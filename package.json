@@ -6,9 +6,9 @@
   "author": "John Grimes",
   "description": "StudyBub - an interactive, gamified multi-subject learning platform for a single learner.",
   "scripts": {
-    "dev": "vinxi dev",
-    "build": "tsc -b && vinxi build",
-    "start": "bun run server.ts",
+    "dev": "vite dev --port 3000",
+    "build": "tsc -b && vite build",
+    "start": "bun run scripts/server.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

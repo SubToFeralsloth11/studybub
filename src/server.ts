@@ -4,8 +4,13 @@ import {
 } from "@tanstack/react-start/server";
 import { createServerEntry } from "@tanstack/react-start/server-entry";
 
-// Create the server entry with the default streaming handler. This
-// processes incoming requests for SSR and server functions.
+/**
+ * StudyBub server entry point for TanStack Start.
+ *
+ * Uses the default streaming handler to process incoming requests for SSR
+ * and server functions. The handler is wrapped via createServerEntry for
+ * the Nitro server build with the Bun preset.
+ */
 const handler = createStartHandler(defaultStreamHandler);
 
 export default createServerEntry({ fetch: handler });

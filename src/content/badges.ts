@@ -10,7 +10,6 @@
  */
 
 import type { Badge } from "../domain/content/types";
-
 /** All badge definitions, in display order. */
 export const badges: Badge[] = [
   {
