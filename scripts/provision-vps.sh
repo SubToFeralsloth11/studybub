@@ -60,17 +60,26 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Installing Bun ---"
+# Install Bun system-wide into /opt/bun rather than a user's $HOME. A home
+# install is not traversable by the studybub service user, by systemd, or by
+# non-interactive SSH sessions (which never source that home's shell rc), so
+# both the service and deploys fail with "bun: command not found".
+readonly BUN_INSTALL_DIR="/opt/bun"
 
-if ! command -v bun &>/dev/null; then
-  curl -fsSL https://bun.sh/install | bash
+if [ ! -x /usr/local/bin/bun ]; then
+  sudo rm -rf "$BUN_INSTALL_DIR"
+  sudo mkdir -p "$BUN_INSTALL_DIR"
+  sudo chown -R "$USER:$USER" "$BUN_INSTALL_DIR"
 
-  # Make bun available to all users via a symlink.
-  if [ -f "$HOME/.bun/bin/bun" ] && [ ! -f /usr/local/bin/bun ]; then
-    sudo ln -sf "$HOME/.bun/bin/bun" /usr/local/bin/bun
-  fi
+  # The installer honours BUN_INSTALL to choose the destination directory.
+  BUN_INSTALL="$BUN_INSTALL_DIR" curl -fsSL https://bun.sh/install | bash
 
-  # Ensure the bun binary is on PATH for this session.
-  export PATH="$HOME/.bun/bin:$PATH"
+  # Take ownership as root and expose read/execute to every user so the
+  # studybub service account, systemd, and non-interactive SSH sessions can
+  # all run bun.
+  sudo chown -R root:root "$BUN_INSTALL_DIR"
+  sudo chmod -R a+rX "$BUN_INSTALL_DIR"
+  sudo ln -sf "$BUN_INSTALL_DIR/bin/bun" /usr/local/bin/bun
 fi
 
 bun --version
@@ -160,7 +169,7 @@ Group=$APP_USER
 WorkingDirectory=$APP_DIR
 EnvironmentFile=$APP_DIR/.env
 Environment=NODE_ENV=$NODE_ENV
-ExecStart=bun run $APP_DIR/scripts/server.ts
+ExecStart=/usr/local/bin/bun run $APP_DIR/scripts/server.ts
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
@@ -176,6 +185,24 @@ sudo systemctl daemon-reload
 sudo systemctl enable studybub.service
 
 echo "Systemd unit enabled."
+
+# ---------------------------------------------------------------------------
+# 6b. Allow the studybub user to restart its own service.
+# ---------------------------------------------------------------------------
+# The CI deploy reloads the app over SSH as the studybub user, which has no
+# password and therefore cannot run sudo interactively. Grant it passwordless
+# restart rights scoped to this single service.
+# ---------------------------------------------------------------------------
+readonly SUDOERS_FILE="/etc/sudoers.d/studybub"
+sudo tee "$SUDOERS_FILE" >/dev/null <<EOF
+studybub ALL=(root) NOPASSWD: /usr/bin/systemctl restart studybub.service
+EOF
+sudo chmod 0440 "$SUDOERS_FILE"
+
+# Validate the sudoers file before trusting it; abort if malformed.
+sudo visudo -cf "$SUDOERS_FILE"
+
+echo "Sudoers entry granted for service restart."
 
 # ---------------------------------------------------------------------------
 # 7. Configure nginx.
