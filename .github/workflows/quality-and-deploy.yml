@@ -93,8 +93,8 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v5
         with:
-          name: dist
-          path: dist/
+          name: build-output
+          path: .output/
           retention-days: 1
 
   e2e-tests:
@@ -136,23 +136,15 @@ jobs:
     timeout-minutes: 10
     environment: production
     steps:
+      # Deploy the exact build artifact produced and gated by the build job,
+      # rather than rebuilding a fresh (ungated) bundle on the runner.
       - uses: actions/checkout@v5
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Download build artifact
+        uses: actions/download-artifact@v5
         with:
-          bun-version: latest
-
-      - name: Cache dependencies
-        uses: actions/cache@v5
-        with:
-          path: |
-            node_modules
-            ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+          name: build-output
+          path: .output/
 
       - name: Setup SSH
         run: |
@@ -171,7 +163,7 @@ jobs:
             --exclude='*.db-wal' \
             --exclude='*.db-shm' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
-            .output scripts/ package.json bun.lock \
+            .output scripts package.json bun.lock \
             "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${{ vars.VPS_PATH }}/"
 
       - name: Install production dependencies on VPS
