@@ -22,7 +22,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.3.1"
 
       - name: Cache dependencies
         uses: actions/cache@v5
@@ -46,7 +46,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.3.1"
 
       - name: Cache dependencies
         uses: actions/cache@v5
@@ -76,7 +76,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.3.1"
 
       - name: Cache dependencies
         uses: actions/cache@v5
@@ -105,7 +105,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.3.1"
 
       - name: Cache dependencies
         uses: actions/cache@v5
@@ -118,7 +118,44 @@ jobs:
 
       - run: bun install --frozen-lockfile
       - run: bunx playwright install chromium --with-deps
+
+      # Diagnostic: boot the dev server under bun with verbose logging and a
+      # hard timeout, then probe the port. The log is uploaded regardless of
+      # the E2E result so a hang in Vite/plugin startup is attributable.
+      - name: Diagnose dev server startup
+        run: |
+          set +e
+          mkdir -p ./dev-diag
+          VITE_BYPASS_AUTH=true bun --bun vite dev --debug \
+            > ./dev-diag/dev.log 2>&1 &
+          DEV_PID=$!
+          echo "dev server pid: $DEV_PID"
+          # Poll the port for up to 90s, but stop sooner if the process exits.
+          for i in $(seq 1 90); do
+            if ! kill -0 "$DEV_PID" 2>/dev/null; then
+              echo "dev server exited early after ${i}s"
+              break
+            fi
+            if curl -sS -m 2 -o /dev/null http://127.0.0.1:3000/; then
+              echo "dev server responded after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          echo "=== dev.log ==="
+          cat ./dev-diag/dev.log
+          kill "$DEV_PID" 2>/dev/null || true
+          wait "$DEV_PID" 2>/dev/null || true
+
       - run: bun run test:e2e
+
+      - name: Upload dev server diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: dev-diag
+          path: dev-diag/
+          retention-days: 7
 
       - name: Upload Playwright report
         if: failure()
