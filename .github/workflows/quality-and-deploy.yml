@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -131,13 +129,12 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Deploy to GitHub Pages
+    name: Deploy to VPS
     needs: [static-analysis, unit-tests, build, e2e-tests]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 10
+    environment: production
     steps:
       - uses: actions/checkout@v5
 
@@ -155,20 +152,47 @@ jobs:
           restore-keys: bun-${{ runner.os }}-
 
       - run: bun install --frozen-lockfile
+      - run: bun run build
 
-      - name: Build for GitHub Pages
+      - name: Setup SSH
         run: |
-          bunx tsc -b
-          bunx vite build --base "/"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Stop service on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
+            "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            sudo systemctl stop studybub.service || true
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist/
+      - name: Rsync build to VPS
+        run: |
+          rsync -avz --delete \
+            --exclude='.env' \
+            --exclude='node_modules/' \
+            --exclude='.git/' \
+            --exclude='src/' \
+            --exclude='*.db' \
+            --exclude='*.db-wal' \
+            --exclude='*.db-shm' \
+            -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            .output/ scripts/server.ts package.json bun.lock \
+            "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${{ vars.VPS_PATH }}/"
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Install production dependencies on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
+            "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "cd ${{ vars.VPS_PATH }} && bun install --production"
+
+      - name: Start service on VPS
+        if: success()
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
+            "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            sudo systemctl start studybub.service
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
