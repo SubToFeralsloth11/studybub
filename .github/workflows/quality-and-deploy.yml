@@ -171,14 +171,14 @@ jobs:
             --exclude='*.db-wal' \
             --exclude='*.db-shm' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
-            .output/ scripts/server.ts package.json bun.lock \
+            .output scripts/ package.json bun.lock \
             "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${{ vars.VPS_PATH }}/"
 
       - name: Install production dependencies on VPS
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
             "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
-            "cd ${{ vars.VPS_PATH }} && bun install --production"
+            "cd ${{ vars.VPS_PATH }} && sudo -u studybub bun install --production"
 
       - name: Restart service on VPS
         if: success()
