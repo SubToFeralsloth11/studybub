@@ -38,7 +38,11 @@ export default defineConfig({
         routeFileIgnorePattern: String.raw`\.test\.(ts|tsx)$`,
       },
     }),
-    nitro(),
+    // Pin the Nitro production preset to Bun so the build output targets
+    // the Bun runtime (Bun.serve) that production runs under. Without this
+    // Nitro auto-selects the node-server preset, producing output that runs
+    // under Bun but is not Bun-native.
+    nitro({ preset: "bun" }),
     viteReact(),
   ],
 });
