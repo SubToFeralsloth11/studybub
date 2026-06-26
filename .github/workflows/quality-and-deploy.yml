@@ -178,7 +178,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
             "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
-            "cd ${{ vars.VPS_PATH }} && sudo -u studybub bun install --production"
+            "cd ${{ vars.VPS_PATH }} && bun install --production"
 
       - name: Restart service on VPS
         if: success()

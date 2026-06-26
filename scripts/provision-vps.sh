@@ -83,7 +83,7 @@ echo ""
 echo "--- Creating studybub user and group ---"
 
 if ! id -u "$APP_USER" &>/dev/null; then
-  useradd --system --user-group --create-home --shell /usr/sbin/nologin "$APP_USER"
+  useradd --system --user-group --create-home --shell /bin/bash "$APP_USER"
   echo "User '$APP_USER' created."
 else
   echo "User '$APP_USER' already exists."

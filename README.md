@@ -102,7 +102,7 @@ gh secret set VPS_SSH_KEY --env production --body "$(cat ~/.ssh/studybub-deploy)
 
 # Variables: VPS connection details.
 gh variable set VPS_HOST --env production --body "vps-80cc1cc4.vps.ovh.ca"
-gh variable set VPS_USER --env production --body "root"
+gh variable set VPS_USER --env production --body "studybub"
 gh variable set VPS_PATH --env production --body "/opt/studybub"
 ```
 
