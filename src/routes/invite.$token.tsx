@@ -1,5 +1,6 @@
 import { startRegistration } from "@simplewebauthn/browser";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
 import { Button } from "../components/Button";
@@ -29,6 +30,8 @@ export function InviteScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [optionsLoaded, setOptionsLoaded] = useState(false);
+
+  const verifyPasskey = useServerFn(verifyPasskeyRegistration);
 
   // Fetch registration options on mount to validate the token and show the
   // display name.
@@ -78,15 +81,13 @@ export function InviteScreen() {
 
       // Step 3: Send the credential to the server for verification.
       // The server stores the credential, marks the token as consumed,
-      // and creates a session.
-      await verifyPasskeyRegistration({
+      // and creates a session. useServerFn handles the redirect to /
+      // internally by calling router.navigate().
+      await verifyPasskey({
         data: { token, credential },
       });
     } catch (error_) {
       if (error_ instanceof Error) {
-        if (error_.message.includes("redirect")) {
-          return; // Success - the router will handle the redirect.
-        }
         if (error_.name === "NotAllowedError") {
           setError("Passkey registration was cancelled.");
         } else {

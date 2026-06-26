@@ -15,16 +15,26 @@ vi.mock("@simplewebauthn/browser", () => ({
   startAuthentication: vi.fn(),
 }));
 
+vi.mock("@tanstack/react-start", () => ({
+  useServerFn: vi.fn(),
+}));
+
 import { startAuthentication } from "@simplewebauthn/browser";
+import { useServerFn } from "@tanstack/react-start";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LoginScreen } from "./login";
 import {
   getPasskeyAuthenticationOptions,
   verifyPasskeyAuthentication,
 } from "../server/api/auth";
+
+beforeEach(() => {
+  // Default: pass-through so non-redirect tests work without extra setup.
+  vi.mocked(useServerFn).mockImplementation((fn: any) => fn);
+});
 
 describe("LoginScreen", () => {
   it("renders the StudyBub heading and sign-in button", () => {
@@ -42,16 +52,30 @@ describe("LoginScreen", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls the authentication flow when the button is clicked", async () => {
+  it("navigates to the home screen after successful authentication", async () => {
     const user = userEvent.setup();
     const mockOptions = { challenge: "test-challenge" };
     const mockCredential = { id: "cred-1", rawId: "raw", response: {} };
+    const mockNavigate = vi.fn();
 
+    vi.mocked(useServerFn).mockImplementation((serverFn: any) => {
+      return async (...args: any[]) => {
+        try {
+          return await serverFn(...args);
+        } catch (error: any) {
+          // Simulate useServerFn's redirect handling: call navigate on redirect.
+          if (error?.message?.includes("redirect")) {
+            mockNavigate({ to: "/" });
+            return;
+          }
+          throw error;
+        }
+      };
+    });
     vi.mocked(getPasskeyAuthenticationOptions).mockResolvedValueOnce(
       mockOptions as any,
     );
     vi.mocked(startAuthentication).mockResolvedValueOnce(mockCredential as any);
-    // verifyPasskeyAuthentication throws a redirect to /, which we catch.
     vi.mocked(verifyPasskeyAuthentication).mockRejectedValueOnce(
       new Error("redirect to /"),
     );
@@ -62,7 +86,51 @@ describe("LoginScreen", () => {
     );
 
     await waitFor(() => {
-      expect(getPasskeyAuthenticationOptions).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith({ to: "/" });
+    });
+  });
+
+  it("navigates to home when verification resolves with a redirect", async () => {
+    const user = userEvent.setup();
+    const mockOptions = { challenge: "test-challenge" };
+    const mockCredential = { id: "cred-1", rawId: "raw", response: {} };
+    const mockNavigate = vi.fn();
+
+    vi.mocked(useServerFn).mockImplementation((serverFn: any) => {
+      return async (...args: any[]) => {
+        try {
+          const result = await serverFn(...args);
+          // If the server returned a redirect response, handle it.
+          if (result?.message?.includes("redirect")) {
+            mockNavigate({ to: "/" });
+            return;
+          }
+          return result;
+        } catch (error: any) {
+          if (error?.message?.includes("redirect")) {
+            mockNavigate({ to: "/" });
+            return;
+          }
+          throw error;
+        }
+      };
+    });
+    vi.mocked(getPasskeyAuthenticationOptions).mockResolvedValueOnce(
+      mockOptions as any,
+    );
+    vi.mocked(startAuthentication).mockResolvedValueOnce(mockCredential as any);
+    // Server returns a redirect response rather than throwing.
+    (
+      vi.mocked(verifyPasskeyAuthentication) as any
+    ).mockResolvedValueOnce(new Error("redirect to /"));
+
+    render(<LoginScreen />);
+    await user.click(
+      screen.getByRole("button", { name: /sign in with passkey/i }),
+    );
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith({ to: "/" });
     });
   });
 

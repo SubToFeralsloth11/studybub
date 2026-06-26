@@ -1,5 +1,6 @@
 import { startAuthentication } from "@simplewebauthn/browser";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { Button } from "../components/Button";
@@ -27,6 +28,8 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const verifyPasskey = useServerFn(verifyPasskeyAuthentication);
+
   async function handleSignIn() {
     setLoading(true);
     setError(null);
@@ -42,15 +45,11 @@ export function LoginScreen() {
 
       // Step 3: Send the signed credential to the server for verification.
       // The server creates a session and redirects to the home page on
-      // success.
-      await verifyPasskeyAuthentication({ data: { credential } });
+      // success. useServerFn handles the redirect internally by calling
+      // router.navigate().
+      await verifyPasskey({ data: { credential } });
     } catch (error_) {
-      // The server may throw a redirect to / on success, which appears as
-      // an error in the catch block. Ignore that case.
       if (error_ instanceof Error) {
-        if (error_.message.includes("redirect")) {
-          return; // Success - the router will handle the redirect.
-        }
         if (error_.name === "NotAllowedError") {
           setError("Sign-in was cancelled.");
         } else {
