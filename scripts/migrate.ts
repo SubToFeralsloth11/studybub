@@ -4,7 +4,11 @@
 import { Database } from "bun:sqlite";
 import { readFileSync } from "node:fs";
 
-import { parseSavedState } from "../src/domain/persistence/schema";
+// `parseSavedState` is imported lazily inside the `import` command below so
+// that the CLI can run `invite` (and other commands that never touch progress
+// state) on a production deployment that ships only the build bundle and the
+// pure domain layer - without it, a static top-level import would fail to
+// resolve on the VPS and abort the whole script before dispatch.
 
 /**
  * Opens the database at the given path (or the default file).
@@ -128,12 +132,12 @@ function inviteUser(db: Database, displayName: string, baseUrl: string): void {
  * @param progressFile - Path to the progress JSON file.
  * @param aiConfigFile - Optional path to the AI config JSON file.
  */
-function importProgress(
+async function importProgress(
   db: Database,
   userId: string,
   progressFile: string,
   _aiConfigFile?: string,
-): void {
+): Promise<void> {
   // Verify the user exists.
   const user = db
     .query("SELECT id, display_name FROM users WHERE id = ?")
@@ -159,6 +163,9 @@ function importProgress(
     process.exit(1);
   }
 
+  // Lazily imported so `invite` and other commands work on production
+  // deployments that do not ship the full `src/` tree.
+  const { parseSavedState } = await import("../src/domain/persistence/schema");
   const savedState = parseSavedState(
     typeof progressJson === "object" ? progressRaw : null,
   );
@@ -362,7 +369,7 @@ if (command === "invite") {
 
   const db = openDatabase();
   initSchema(db);
-  importProgress(db, userId, progressFile, aiConfigFile);
+  await importProgress(db, userId, progressFile, aiConfigFile);
 } else {
   console.error(`Unknown command: ${command}`);
   printHelp();

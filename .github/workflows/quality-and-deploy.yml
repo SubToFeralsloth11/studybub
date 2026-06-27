@@ -199,12 +199,11 @@ jobs:
             --exclude='.env' \
             --exclude='node_modules/' \
             --exclude='.git/' \
-            --exclude='src/' \
             --exclude='*.db' \
             --exclude='*.db-wal' \
             --exclude='*.db-shm' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
-            .output scripts package.json bun.lock \
+            .output scripts src/domain package.json bun.lock \
             "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${{ vars.VPS_PATH }}/"
 
       - name: Install production dependencies on VPS
