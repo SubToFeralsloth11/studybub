@@ -124,16 +124,21 @@ jobs:
       - run: bunx playwright install chromium --with-deps
 
       # Diagnostic: boot the dev server under bun with verbose logging and a
-      # hard timeout, then probe the port. The log is uploaded regardless of
-      # the E2E result so a hang in Vite/plugin startup is attributable.
+      # hard timeout, then probe the port. The log is written outside the
+      # repository (under /tmp) so Vite's file watcher does not see it - writing
+      # the log inside the watched tree caused a churning HMR feedback loop that
+      # slowed the dev server and destabilised the subsequent E2E run. The log
+      # is uploaded regardless of the E2E result so a hang in Vite/plugin
+      # startup is attributable.
       - name: Diagnose dev server startup
         run: |
           set +e
-          mkdir -p ./dev-diag
-          VITE_BYPASS_AUTH=true bun --bun vite dev --debug \
-            > ./dev-diag/dev.log 2>&1 &
+          mkdir -p /tmp/dev-diag
+          # Run in a new session so we can tear down the whole process group,
+          # including any Nitro/worker children bun spawns.
+          setsid bash -c 'VITE_BYPASS_AUTH=true bun --bun vite dev --debug > /tmp/dev-diag/dev.log 2>&1' &
           DEV_PID=$!
-          echo "dev server pid: $DEV_PID"
+          echo "dev server pid: $DEV_PID (pgid $DEV_PID)"
           # Poll the port for up to 90s, but stop sooner if the process exits.
           for i in $(seq 1 90); do
             if ! kill -0 "$DEV_PID" 2>/dev/null; then
@@ -147,8 +152,10 @@ jobs:
             sleep 1
           done
           echo "=== dev.log ==="
-          cat ./dev-diag/dev.log
-          kill "$DEV_PID" 2>/dev/null || true
+          cat /tmp/dev-diag/dev.log
+          # Kill the entire process group to avoid leaving vite/nitro children
+          # on the runner before Playwright starts its own server.
+          kill -- -"$DEV_PID" 2>/dev/null || kill "$DEV_PID" 2>/dev/null || true
           wait "$DEV_PID" 2>/dev/null || true
 
       - run: bun run test:e2e
@@ -158,7 +165,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: dev-diag
-          path: dev-diag/
+          path: /tmp/dev-diag/
           retention-days: 7
 
       - name: Upload Playwright report

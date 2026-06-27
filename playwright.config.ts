@@ -8,7 +8,11 @@ import { defineConfig, devices } from "@playwright/test";
  * Tests run against the dev server for fast feedback.
  */
 const port = 3000;
-const baseURL = `http://localhost:${port}`;
+// Use the IPv4 loopback explicitly. The dev server is pinned to 127.0.0.1 in
+// vite.config.ts; on Linux `localhost` can resolve to the IPv6 loopback (::1)
+// first, leaving the port unreachable and causing Playwright's webServer probe
+// to time out. Matching the bound interface keeps the probe reliable.
+const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
