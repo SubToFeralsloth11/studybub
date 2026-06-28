@@ -134,22 +134,24 @@ backup and run `systemctl start studybub`.
 
 ## Scripts
 
-| Script                     | Purpose                                                                                      |
-| -------------------------- | -------------------------------------------------------------------------------------------- |
-| `bun run dev`              | Start the Vite + TanStack Start dev server.                                                  |
-| `bun run build`            | Type-check and build for production.                                                         |
-| `bun run start`            | Start the production Bun server.                                                             |
-| `bun run preview`          | Preview the production build.                                                                |
-| `bun run lint`             | Run ESLint.                                                                                  |
-| `bun run lint:fix`         | Run ESLint with autofix.                                                                     |
-| `bun run format`           | Format with Prettier.                                                                        |
-| `bun run format:check`     | Check formatting.                                                                            |
-| `bun run lint:duplication` | Detect copy-paste duplication with jscpd.                                                    |
-| `bun run test`             | Run the unit and component tests once.                                                       |
-| `bun run test:watch`       | Run the tests in watch mode.                                                                 |
-| `bun run test:coverage`    | Run the tests with coverage (80% thresholds).                                                |
-| `bun run test:e2e`         | Run the Playwright end-to-end tests.                                                         |
-| `bun run check`            | Run all quality gates: lint, format, duplication, tests + coverage, type-check + build, e2e. |
+| Script                      | Purpose                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| `bun run dev`               | Start the Vite + TanStack Start dev server.                                                  |
+| `bun run build`             | Type-check and build for production.                                                         |
+| `bun run start`             | Start the production Bun server.                                                             |
+| `bun run preview`           | Preview the production build.                                                                |
+| `bun run lint`              | Run ESLint.                                                                                  |
+| `bun run lint:fix`          | Run ESLint with autofix.                                                                     |
+| `bun run format`            | Format with Prettier.                                                                        |
+| `bun run format:check`      | Check formatting.                                                                            |
+| `bun run lint:duplication`  | Detect copy-paste duplication with jscpd.                                                    |
+| `bun run test`              | Run the app (Node/jsdom) and server (Bun) test suites once.                                  |
+| `bun run test:watch`        | Watch the app (Node/jsdom) suite.                                                            |
+| `bun run test:server`       | Run the server suite once under Bun (`src/server/`, needs `bun:sqlite`).                     |
+| `bun run test:server:watch` | Watch the server suite under Bun.                                                            |
+| `bun run test:coverage`     | Run both suites with coverage (app enforces 80% thresholds; server reports coverage).        |
+| `bun run test:e2e`          | Run the Playwright end-to-end tests.                                                         |
+| `bun run check`             | Run all quality gates: lint, format, duplication, tests + coverage, type-check + build, e2e. |
 
 The Playwright tests start the dev server automatically. Install the browser
 once with `bunx playwright install chromium` before the first run.
