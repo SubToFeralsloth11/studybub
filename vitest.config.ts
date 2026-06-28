@@ -16,6 +16,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    // The app suite is full of jsdom component-integration tests that mount
+    // the full router/provider tree via `renderApp` (12 test files). Under
+    // CPU contention the first render + assertions of a test can exceed the
+    // 5s default and flake. A 15s timeout gives those heavy mounts reliable
+    // headroom without masking genuinely-hung unit tests (the domain tests
+    // run in milliseconds).
+    testTimeout: 15_000,
     passWithNoTests: true,
     setupFiles: ["./tests/setup.ts", "./src/test/mocks.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
