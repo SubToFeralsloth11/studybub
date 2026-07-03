@@ -4,7 +4,11 @@ import { Route } from "./healthcheck";
 
 describe("healthcheck route", () => {
   it("returns 200 with status ok", async () => {
-    const handler = (Route.options as { server: { handlers: { GET: () => Promise<Response> } } }).server.handlers.GET;
+    const handler = (
+      Route.options as {
+        server: { handlers: { GET: () => Promise<Response> } };
+      }
+    ).server.handlers.GET;
     const response = await handler();
     const body = await response.json();
 
