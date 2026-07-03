@@ -17,6 +17,7 @@ spec:
       initContainers:
         - name: migrate
           image: {{ .Values.studybub.image.repository }}:{{ .Values.studybub.image.tag }}
+          imagePullPolicy: {{ .Values.studybub.image.pullPolicy }}
           command:
             {{- toYaml .Values.studybub.migration.command | nindent 12 }}
           envFrom:
