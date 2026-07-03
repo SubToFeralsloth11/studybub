@@ -1,11 +1,11 @@
+import path from "node:path";
 import { describe, expect, it } from "bun:test";
 import { execSync } from "node:child_process";
 import { existsSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
 
 describe("migrate subcommand", () => {
   it("creates the schema without flags", () => {
-    const dbPath = join(
+    const dbPath = path.join(
       import.meta.dir,
       "test-migrate-" + Date.now() + ".db",
     );
@@ -15,8 +15,8 @@ describe("migrate subcommand", () => {
       const output = execSync(
         `STUDYBUB_DB_PATH=${dbPath} bun run scripts/migrate.ts migrate`,
         {
-          encoding: "utf-8",
-          cwd: join(import.meta.dir, ".."),
+          encoding: "utf8",
+          cwd: path.join(import.meta.dir, ".."),
         },
       );
 

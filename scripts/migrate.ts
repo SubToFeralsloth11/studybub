@@ -338,53 +338,63 @@ if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
 
 const command = args[0];
 
-if (command === "migrate") {
-  const db = openDatabase();
-  initSchema(db);
-  console.log("Migrate: schema created");
-} else if (command === "invite") {
-  const nameIndex = args.indexOf("--name");
-  if (nameIndex === -1 || !args[nameIndex + 1]) {
-    console.error("Error: --name is required for the invite command.");
+switch (command) {
+  case "migrate": {
+    const db = openDatabase();
+    initSchema(db);
+    console.log("Migrate: schema created");
+    break;
+  }
+  case "invite": {
+    const nameIndex = args.indexOf("--name");
+    if (nameIndex === -1 || !args[nameIndex + 1]) {
+      console.error("Error: --name is required for the invite command.");
+      process.exit(1);
+    }
+    const displayName = args[nameIndex + 1];
+
+    const baseUrlIndex = args.indexOf("--base-url");
+    const baseUrl =
+      baseUrlIndex !== -1 && args[baseUrlIndex + 1]
+        ? args[baseUrlIndex + 1]
+        : "http://localhost:3000";
+
+    const db = openDatabase();
+    initSchema(db);
+    inviteUser(db, displayName, baseUrl);
+    break;
+  }
+  case "import": {
+    const userIdIndex = args.indexOf("--user-id");
+    if (userIdIndex === -1 || !args[userIdIndex + 1]) {
+      console.error("Error: --user-id is required for the import command.");
+      process.exit(1);
+    }
+    const userId = args[userIdIndex + 1];
+
+    const progressFileIndex = args.indexOf("--progress-file");
+    if (progressFileIndex === -1 || !args[progressFileIndex + 1]) {
+      console.error(
+        "Error: --progress-file is required for the import command.",
+      );
+      process.exit(1);
+    }
+    const progressFile = args[progressFileIndex + 1];
+
+    const aiConfigFileIndex = args.indexOf("--ai-config-file");
+    const aiConfigFile =
+      aiConfigFileIndex !== -1 && args[aiConfigFileIndex + 1]
+        ? args[aiConfigFileIndex + 1]
+        : undefined;
+
+    const db = openDatabase();
+    initSchema(db);
+    await importProgress(db, userId, progressFile, aiConfigFile);
+    break;
+  }
+  default: {
+    console.error(`Unknown command: ${command}`);
+    printHelp();
     process.exit(1);
   }
-  const displayName = args[nameIndex + 1];
-
-  const baseUrlIndex = args.indexOf("--base-url");
-  const baseUrl =
-    baseUrlIndex !== -1 && args[baseUrlIndex + 1]
-      ? args[baseUrlIndex + 1]
-      : "http://localhost:3000";
-
-  const db = openDatabase();
-  initSchema(db);
-  inviteUser(db, displayName, baseUrl);
-} else if (command === "import") {
-  const userIdIndex = args.indexOf("--user-id");
-  if (userIdIndex === -1 || !args[userIdIndex + 1]) {
-    console.error("Error: --user-id is required for the import command.");
-    process.exit(1);
-  }
-  const userId = args[userIdIndex + 1];
-
-  const progressFileIndex = args.indexOf("--progress-file");
-  if (progressFileIndex === -1 || !args[progressFileIndex + 1]) {
-    console.error("Error: --progress-file is required for the import command.");
-    process.exit(1);
-  }
-  const progressFile = args[progressFileIndex + 1];
-
-  const aiConfigFileIndex = args.indexOf("--ai-config-file");
-  const aiConfigFile =
-    aiConfigFileIndex !== -1 && args[aiConfigFileIndex + 1]
-      ? args[aiConfigFileIndex + 1]
-      : undefined;
-
-  const db = openDatabase();
-  initSchema(db);
-  await importProgress(db, userId, progressFile, aiConfigFile);
-} else {
-  console.error(`Unknown command: ${command}`);
-  printHelp();
-  process.exit(1);
 }
