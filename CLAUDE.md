@@ -49,3 +49,13 @@ All five gate groups must succeed before a deploy to GitHub Pages is triggered o
 **Local enforcement.** `bun run check` runs all five gates in dependency order (lint → format → jscpd → unit tests + coverage (both projects) → type-check + build → e2e). Every commit pushed to `main` MUST have passed `bun run check` locally first. No exceptions.
 
 **Rationale:** Automated gates prevent regressions, enforce consistent style, catch type errors and dead code, and ensure the learner never encounters a broken build. Making them non-negotiable removes the temptation to skip checks under time pressure.
+
+## Deployment
+
+### VPS (primary)
+
+The app is deployed to a VPS via `scripts/provision-vps.sh`. The GitHub Actions workflow (`quality-and-deploy.yml`) builds, runs all quality gates, and rsyncs the bundle to the VPS on push to `main`.
+
+### Kubernetes (alternative)
+
+A Helm chart is available under `chart/` for Kubernetes deployment. The chart creates a Deployment, Service, PVC, Secret, and ConfigMap. An init container runs database migrations before the app starts. See `chart/README.md` for installation instructions.
