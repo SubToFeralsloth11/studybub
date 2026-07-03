@@ -1,0 +1,32 @@
+studybub:
+  image:
+    repository: studybub
+    tag: latest
+    pullPolicy: Never
+
+  config:
+    STUDYBUB_DB_PATH: "/data/data.db"
+
+  persistence:
+    enabled: true
+    size: "1Gi"
+    existingClaim: studybub-studybub-data
+
+  secretConfig:
+    SESSION_SECRET: "559393705f32e2f6d79200e67520eb269d18214f1c4b8dcedfedac09eaeec672"
+    ENCRYPTION_KEY: "7d418406518c07202ca9afd8659fe73c4a3085a77ddcb092b0e3309198cb9e55"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: studybub.syntaxrewrite.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: studybub-tls
+      hosts:
+        - studybub.syntaxrewrite.com
