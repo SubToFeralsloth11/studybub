@@ -9,3 +9,6 @@ test-results
 studybub.db*
 .output
 .vinxi
+
+# pi-subagents runtime artifacts
+.pi-subagents
