@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-studybub
+  labels:
+    {{- include "studybub.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.studybub.service.type | quote }}
+  ports:
+    - port: {{ .Values.studybub.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "studybub.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,12 @@
+{{- if .Values.studybub.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-studybub-config
+  labels:
+    {{- include "studybub.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.studybub.config }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

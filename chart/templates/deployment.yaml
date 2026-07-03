@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-studybub
+  labels:
+    {{- include "studybub.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.studybub.replicas }}
+  selector:
+    matchLabels:
+      {{- include "studybub.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "studybub.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: migrate
+          image: {{ .Values.studybub.image.repository }}:{{ .Values.studybub.image.tag }}
+          command:
+            {{- toYaml .Values.studybub.migration.command | nindent 12 }}
+          envFrom:
+            {{- if .Values.studybub.config }}
+            - configMapRef:
+                name: {{ .Release.Name }}-studybub-config
+            {{- end }}
+            {{- if .Values.studybub.secretConfig }}
+            - secretRef:
+                name: {{ .Release.Name }}-studybub-secret
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: studybub
+          image: {{ .Values.studybub.image.repository }}:{{ .Values.studybub.image.tag }}
+          imagePullPolicy: {{ .Values.studybub.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.studybub.service.port }}
+              protocol: TCP
+          envFrom:
+            {{- if .Values.studybub.config }}
+            - configMapRef:
+                name: {{ .Release.Name }}-studybub-config
+            {{- end }}
+            {{- if .Values.studybub.secretConfig }}
+            - secretRef:
+                name: {{ .Release.Name }}-studybub-secret
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          {{- if .Values.studybub.resources }}
+          resources:
+            {{- toYaml .Values.studybub.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-studybub-data

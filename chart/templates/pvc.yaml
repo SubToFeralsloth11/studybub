@@ -1,0 +1,17 @@
+{{- if .Values.studybub.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-studybub-data
+  labels:
+    {{- include "studybub.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.studybub.persistence.size | quote }}
+  {{- if .Values.studybub.persistence.storageClassName }}
+  storageClassName: {{ .Values.studybub.persistence.storageClassName | quote }}
+  {{- end }}
+{{- end }}
