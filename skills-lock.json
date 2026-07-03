@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "helm-charts": {
+      "source": "johngrimes/skills",
+      "sourceType": "github",
+      "skillPath": "helm-charts/SKILL.md",
+      "computedHash": "92628b97c2109596e929df9a862dbdc901b749dd60c06c17ce13db960ed76fad"
+    },
     "openai-image": {
       "source": "johngrimes/skills",
       "sourceType": "github",
