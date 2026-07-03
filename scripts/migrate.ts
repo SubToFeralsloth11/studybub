@@ -295,10 +295,12 @@ function printHelp(): void {
   console.log(`StudyBub CLI
 
 Usage:
+  bun run scripts/migrate.ts migrate
   bun run scripts/migrate.ts invite --name <name> [--base-url <url>]
   bun run scripts/migrate.ts import --user-id <id> --progress-file <path> [--ai-config-file <path>]
 
 Commands:
+  migrate    Create or update the database schema.
   invite     Create a new user and generate an invitation link.
   import     Import progress (and optionally AI config) from JSON files.
 
@@ -336,7 +338,11 @@ if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
 
 const command = args[0];
 
-if (command === "invite") {
+if (command === "migrate") {
+  const db = openDatabase();
+  initSchema(db);
+  console.log("Migrate: schema created");
+} else if (command === "invite") {
   const nameIndex = args.indexOf("--name");
   if (nameIndex === -1 || !args[nameIndex + 1]) {
     console.error("Error: --name is required for the invite command.");

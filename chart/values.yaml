@@ -1,0 +1,42 @@
+studybub:
+  image:
+    repository: ghcr.io/studybub/studybub
+    tag: "latest"
+    pullPolicy: Always
+
+  replicas: 1
+
+  resources: {}
+  # resources:
+  #   requests:
+  #     memory: "256Mi"
+  #     cpu: "200m"
+  #   limits:
+  #     memory: "512Mi"
+  #     cpu: "500m"
+
+  persistence:
+    enabled: true
+    size: "1Gi"
+    storageClassName: null
+
+  config:
+    NODE_ENV: "production"
+    STUDYBUB_DB_PATH: "/data/studybub.db"
+
+  secretConfig: {}
+  # secretConfig:
+  #   ENCRYPTION_KEY: "replace-with-random-hex"
+  #   SESSION_SECRET: "replace-with-random-hex"
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  migration:
+    image: ""
+    command:
+      - bun
+      - run
+      - scripts/migrate.ts
+      - migrate
