@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HealthcheckRouteImport } from './routes/healthcheck'
 import { Route as BadgesRouteImport } from './routes/badges'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubjectSubjectIdRouteImport } from './routes/subject.$subjectId'
@@ -27,6 +28,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthcheckRoute = HealthcheckRouteImport.update({
+  id: '/healthcheck',
+  path: '/healthcheck',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BadgesRoute = BadgesRouteImport.update({
@@ -69,6 +75,7 @@ const SubjectSubjectIdTrackTrackIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/badges': typeof BadgesRoute
+  '/healthcheck': typeof HealthcheckRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/challenge/$trackId': typeof ChallengeTrackIdRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/badges': typeof BadgesRoute
+  '/healthcheck': typeof HealthcheckRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/challenge/$trackId': typeof ChallengeTrackIdRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/badges': typeof BadgesRoute
+  '/healthcheck': typeof HealthcheckRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/challenge/$trackId': typeof ChallengeTrackIdRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/badges'
+    | '/healthcheck'
     | '/login'
     | '/settings'
     | '/challenge/$trackId'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/badges'
+    | '/healthcheck'
     | '/login'
     | '/settings'
     | '/challenge/$trackId'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/badges'
+    | '/healthcheck'
     | '/login'
     | '/settings'
     | '/challenge/$trackId'
@@ -139,6 +151,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BadgesRoute: typeof BadgesRoute
+  HealthcheckRoute: typeof HealthcheckRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   ChallengeTrackIdRoute: typeof ChallengeTrackIdRoute
@@ -161,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/healthcheck': {
+      id: '/healthcheck'
+      path: '/healthcheck'
+      fullPath: '/healthcheck'
+      preLoaderRoute: typeof HealthcheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/badges': {
@@ -229,6 +249,7 @@ const SubjectSubjectIdRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BadgesRoute: BadgesRoute,
+  HealthcheckRoute: HealthcheckRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   ChallengeTrackIdRoute: ChallengeTrackIdRoute,
