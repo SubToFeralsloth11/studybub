@@ -24,15 +24,15 @@ describe("HomeScreen", () => {
     );
     expect(screen.getByText(/12 tracks/)).toBeInTheDocument();
 
-    // Science has 2 tracks (use within to avoid matching "12 tracks" from Maths).
+    // Science has 3 tracks (use within to avoid matching "12 tracks" from Maths).
     const scienceLink = screen.getByRole("link", { name: /Science/i });
     expect(scienceLink).toHaveAttribute("href", "/subject/science");
-    expect(within(scienceLink).getByText(/2 tracks/)).toBeInTheDocument();
+    expect(within(scienceLink).getByText(/3 tracks/)).toBeInTheDocument();
 
-    // HSS has 1 track (Languages also has 1, so scope to the HSS card).
+    // HSS has 2 tracks (Languages also has 1, so scope to the HSS card).
     const hssLink = screen.getByRole("link", { name: /HSS/i });
     expect(hssLink).toHaveAttribute("href", "/subject/hss");
-    expect(within(hssLink).getByText(/1 track/)).toBeInTheDocument();
+    expect(within(hssLink).getByText(/2 tracks/)).toBeInTheDocument();
   });
 
   it("offers links to badges and a reset control", async () => {
