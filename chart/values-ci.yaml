@@ -1,6 +1,6 @@
 studybub:
   image:
-    repository: ghcr.io/studybub/studybub
+    repository: ghcr.io/subtoferalsloth11/studybub
     pullPolicy: Always
   config:
     STUDYBUB_DB_PATH: /data/data.db
