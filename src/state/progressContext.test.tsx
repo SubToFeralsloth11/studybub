@@ -116,7 +116,8 @@ describe("ProgressProvider - server-backed persistence", () => {
     });
   });
 
-  it("sets saveStatus to error when server save fails", async () => {
+  it("falls back to localStorage when server save fails", async () => {
+    localStorage.removeItem("studybub.progress.v1");
     mockLoadProgress.mockResolvedValueOnce(defaultState());
     // saveProgress is called after hydration - make it fail.
     mockSaveProgress.mockRejectedValueOnce(new Error("Save failed"));
@@ -129,9 +130,39 @@ describe("ProgressProvider - server-backed persistence", () => {
     renderProvider(track);
 
     await waitFor(() => {
+      // Server save failed, but localStorage fallback should keep it "saved".
+      const hasSaved = states.some((s) => s.saveStatus === "saved");
+      expect(hasSaved).toBe(true);
+    });
+
+    // No error banner should ever appear, and progress is recorded locally.
+    expect(states.some((s) => s.saveStatus === "error")).toBe(false);
+    expect(localStorage.getItem("studybub.progress.v1")).not.toBeNull();
+  });
+
+  it("sets saveStatus to error when both server and localStorage fail", async () => {
+    mockLoadProgress.mockResolvedValueOnce(defaultState());
+    mockSaveProgress.mockRejectedValueOnce(new Error("Save failed"));
+    // Force localStorage to fail so the fallback cannot rescue the save.
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("Storage disabled");
+      });
+
+    const states: Array<{ saveStatus: string; xp: number }> = [];
+    const track = (saveStatus: string, xp: number) => {
+      states.push({ saveStatus, xp });
+    };
+
+    renderProvider(track);
+
+    await waitFor(() => {
       const hasError = states.some((s) => s.saveStatus === "error");
       expect(hasError).toBe(true);
     });
+
+    setItemSpy.mockRestore();
   });
 
   it("resets progress via server function", async () => {

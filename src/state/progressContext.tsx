@@ -19,6 +19,38 @@ import { defaultState, type SavedState } from "../domain/persistence/schema";
 
 import type { AppContent } from "../domain/content/types";
 
+/** The localStorage key used to persist progress when the server is unavailable. */
+const PROGRESS_STORAGE_KEY = "studybub.progress.v1";
+
+/**
+ * Reads any locally saved progress from localStorage.
+ *
+ * @returns The saved state, or null when none is stored or reading fails.
+ */
+function readLocalProgress(): SavedState | null {
+  try {
+    const raw = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as SavedState) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Writes progress to localStorage.
+ *
+ * @param saved - The state to persist.
+ * @returns True when the write succeeded, false when localStorage is unavailable.
+ */
+function writeLocalProgress(saved: SavedState): boolean {
+  try {
+    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(saved));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Whether the most recent persistence write succeeded (for status display). */
 type SaveStatus = "idle" | "loading" | "saved" | "error";
 
@@ -79,13 +111,8 @@ export function ProgressProvider({
 
     async function hydrate() {
       if (isE2e) {
-        const raw = localStorage.getItem("studybub.progress.v1");
-        let saved: SavedState;
-        try {
-          saved = raw ? (JSON.parse(raw) as SavedState) : defaultState();
-        } catch {
-          saved = defaultState();
-        }
+        const local = readLocalProgress();
+        const saved: SavedState = local ?? defaultState();
         if (!cancelled) {
           dispatch({ type: "HYDRATE", saved });
           setHydrated(true);
@@ -101,8 +128,10 @@ export function ProgressProvider({
           setHydrated(true);
         }
       } catch {
-        // Server unavailable - stay with default state.
+        // Server unavailable - fall back to any locally saved progress.
         if (!cancelled) {
+          const local = readLocalProgress();
+          dispatch({ type: "HYDRATE", saved: local ?? defaultState() });
           setHydrated(true);
         }
       }
@@ -128,7 +157,7 @@ export function ProgressProvider({
 
     async function persist() {
       if (isE2e) {
-        localStorage.setItem("studybub.progress.v1", JSON.stringify(saved));
+        writeLocalProgress(saved);
         setSaveStatus("saved");
         return;
       }
@@ -141,7 +170,8 @@ export function ProgressProvider({
         }
       } catch {
         if (version === saveVersionRef.current) {
-          setSaveStatus("error");
+          // Server unavailable - persist locally so progress is not lost.
+          setSaveStatus(writeLocalProgress(saved) ? "saved" : "error");
         }
       }
     }
@@ -152,7 +182,7 @@ export function ProgressProvider({
   const handleReset = async () => {
     if (isE2e) {
       const fresh = defaultState();
-      localStorage.removeItem("studybub.progress.v1");
+      localStorage.removeItem(PROGRESS_STORAGE_KEY);
       dispatch({ type: "HYDRATE", saved: fresh });
       setSaveStatus("saved");
       return;
@@ -164,7 +194,10 @@ export function ProgressProvider({
       dispatch({ type: "HYDRATE", saved: fresh });
       setSaveStatus("saved");
     } catch {
-      setSaveStatus("error");
+      // Server unavailable - clear local progress instead.
+      localStorage.removeItem(PROGRESS_STORAGE_KEY);
+      dispatch({ type: "HYDRATE", saved: defaultState() });
+      setSaveStatus("saved");
     }
   };
 
