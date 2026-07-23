@@ -50,11 +50,19 @@ const figCellSizeScale: Figure = {
     "[Diagram: Scale comparison of cells and small objects from grain of rice down to virus]",
 };
 
+const figSpecialisedCells: Figure = {
+  id: "specialised-cells",
+  alt: "Diagrams of four specialised animal cells side by side: a red blood cell (flattened disc full of haemoglobin, no nucleus), a nerve cell (neuron with long branching fibres), an intestinal lining cell (covered in finger-like microvilli), and a sperm cell (with a tail for swimming).",
+  textFallback:
+    "[Diagram: Specialised cells — red blood cell (flattened disc, no nucleus), nerve cell (branching fibres), intestinal cell (microvilli), sperm cell (tail)]",
+};
+
 export const biologyFigures: Figure[] = [
   figAnimalCell,
   figPlantCell,
   figMicroscope,
   figCellSizeScale,
+  figSpecialisedCells,
 ];
 
 // ---------------------------------------------------------------------------
@@ -1131,6 +1139,306 @@ const biologyBossQuestions: Question[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Lesson 5 (Extension) – Specialised cells
+// ---------------------------------------------------------------------------
+
+const specialisedCellsLesson: Lesson = {
+  id: "specialised-cells",
+  order: 5,
+  title: "Specialised cells (Extension)",
+  sourceRef: "EXTENSION: Specialised cells (Stile)",
+  aiProvenance: {
+    tool: "Claude",
+    sources: [
+      "Stile: EXTENSION: Specialised cells",
+      "Stile: EXTENSION: Putting cells to work",
+    ],
+    role: "generated",
+  },
+  learnCards: [
+    {
+      id: "sc-specialisation",
+      heading: "Key idea: structure follows function",
+      body: [
+        t(
+          "In multicellular organisms, cells work together to keep the organism alive. But not every cell does every job. A specialised cell is a cell with a unique structure that suits it to one particular function.",
+        ),
+        t(
+          "Specialised cells vary in shape, size, and the number and type of organelles they contain. A nerve cell, for instance, has long branching fibres to carry messages across the body, while a red blood cell is a flattened disc packed with a red pigment. The structure of a cell is always related to the job it performs.",
+        ),
+      ],
+      figure: figSpecialisedCells,
+    },
+    {
+      id: "sc-red-blood",
+      heading: "Red blood cells: built to carry oxygen",
+      body: [
+        t(
+          "Every cell in the body needs oxygen to release the energy stored in sugars — without it, cells cannot carry out their life processes and soon die. Red blood cells do the vital job of carrying oxygen from the lungs to every part of the body. They make up about 40–45% of the volume of blood, and an adult has around 25 trillion of them.",
+        ),
+        t(
+          "Red blood cells are adapted to their role in four ways: they contain a red pigment called haemoglobin that grabs onto oxygen; they have no nucleus, leaving more room for haemoglobin; their flattened disc shape gives a large surface area to absorb and release oxygen quickly; and they are flexible, so they can squeeze through the tiniest blood vessels.",
+        ),
+      ],
+    },
+    {
+      id: "sc-microvilli",
+      heading: "Surface area: the microvilli trick",
+      body: [
+        t(
+          "Other specialised cells boost their surface area to absorb more of something. The intestinal lining cells that absorb water from your food are covered in thousands of tiny finger-like projections called microvilli. These massively increase the cell's surface area, so water and nutrients can be absorbed far more quickly.",
+        ),
+        t(
+          "This is a recurring theme in specialised cells: when a cell needs to absorb, exchange or release large amounts of a substance quickly, evolution gives it a large surface area — through flattening (red blood cells), folding (microvilli), or branching (nerve cells).",
+        ),
+      ],
+    },
+  ],
+  practice: [
+    {
+      id: "sc-p1",
+      type: "mcq",
+      prompt: [t("What is meant when we say a cell is 'specialised'?")],
+      explanation: [
+        t(
+          "A specialised cell has a unique structure (shape, size, organelles) that suits it to a particular job. Its structure is related to its function — that is the key idea of cell specialisation.",
+        ),
+      ],
+      xp: 10,
+      options: [
+        { id: "a", label: [t("It can do every job in the body")] },
+        {
+          id: "b",
+          label: [t("Its structure is adapted for one specific function")],
+        },
+        { id: "c", label: [t("It is larger than other cells")] },
+        { id: "d", label: [t("It has no organelles")] },
+      ],
+      correctOptionId: "b",
+    },
+    {
+      id: "sc-p2",
+      type: "mcq",
+      prompt: [t("Why do cells need oxygen?")],
+      explanation: [
+        t(
+          "Cells use oxygen to release the energy stored in sugars. Without that energy they cannot carry out their life processes and soon die. That is why the average person cannot survive more than about three minutes without oxygen.",
+        ),
+      ],
+      xp: 10,
+      options: [
+        { id: "a", label: [t("It allows them to produce haemoglobin")] },
+        { id: "b", label: [t("It is an ingredient for photosynthesis")] },
+        { id: "c", label: [t("It helps them release energy from sugars")] },
+        { id: "d", label: [t("It makes them flexible")] },
+      ],
+      correctOptionId: "c",
+    },
+    {
+      id: "sc-p3",
+      type: "mcq",
+      prompt: [
+        t(
+          "Red blood cells have NO nucleus. How does this help their function?",
+        ),
+      ],
+      explanation: [
+        t(
+          "Without a nucleus, there is more space inside the cell for haemoglobin — the pigment that carries oxygen. More haemoglobin means each red blood cell can carry more oxygen, making it better at its job.",
+        ),
+      ],
+      xp: 15,
+      options: [
+        { id: "a", label: [t("It makes the cell move faster")] },
+        {
+          id: "b",
+          label: [t("It leaves more room for haemoglobin to carry oxygen")],
+        },
+        { id: "c", label: [t("It stops the cell from ageing")] },
+        { id: "d", label: [t("It lets the cell photosynthesise")] },
+      ],
+      correctOptionId: "b",
+    },
+    {
+      id: "sc-p4",
+      type: "mcq",
+      prompt: [
+        t(
+          "Microvilli increase a cell's surface area. Which everyday object is the best analogy for how they work?",
+        ),
+      ],
+      explanation: [
+        t(
+          "Microvilli work like the looped threads of a towel — lots of tiny folds that dramatically increase the surface that can soak up (absorb) water. A towel dries you far better than a flat sheet of the same material because of its fuzzy, folded surface.",
+        ),
+      ],
+      xp: 15,
+      options: [
+        { id: "a", label: [t("The thorns on a rose bush")] },
+        { id: "b", label: [t("The looped threads on a bathroom towel")] },
+        { id: "c", label: [t("The blade of a knife")] },
+        { id: "d", label: [t("A solid rubber ball")] },
+      ],
+      correctOptionId: "b",
+    },
+    {
+      id: "sc-p5",
+      type: "matching",
+      prompt: [
+        t(
+          "Match each specialised cell to the feature that helps it do its job.",
+        ),
+      ],
+      explanation: [
+        t(
+          "Red blood cell → flattened disc with no nucleus (max haemoglobin); Nerve cell → long branching fibres (carry messages); Intestinal lining cell → microvilli (absorb water/nutrients); Sperm cell → tail (swim to the egg). Each structure suits the cell's function.",
+        ),
+      ],
+      xp: 15,
+      pairs: [
+        {
+          id: "a",
+          left: [t("Red blood cell")],
+          right: [t("Flattened disc, no nucleus")],
+        },
+        {
+          id: "b",
+          left: [t("Nerve cell")],
+          right: [t("Long branching fibres")],
+        },
+        {
+          id: "c",
+          left: [t("Intestinal lining cell")],
+          right: [t("Microvilli")],
+        },
+        { id: "d", left: [t("Sperm cell")], right: [t("Tail for swimming")] },
+      ],
+    },
+    {
+      id: "sc-p6",
+      type: "mcq",
+      prompt: [
+        t(
+          "A brain cell has a branching shape. Which function does this shape best support?",
+        ),
+      ],
+      explanation: [
+        t(
+          "The branching shape of a nerve (brain) cell lets it connect to many other cells, forming a messaging network. The more branches, the more connections — which is exactly what a cell carrying signals around the body needs.",
+        ),
+      ],
+      xp: 10,
+      options: [
+        { id: "a", label: [t("Storing fat")] },
+        { id: "b", label: [t("Forming messaging networks")] },
+        { id: "c", label: [t("Carrying oxygen")] },
+        { id: "d", label: [t("Absorbing water")] },
+      ],
+      correctOptionId: "b",
+    },
+    {
+      id: "sc-p7",
+      type: "fillInTheBlank",
+      prompt: [
+        t(
+          "Complete the sentence: The red pigment in red blood cells that attaches to oxygen is called ___.",
+        ),
+      ],
+      explanation: [
+        t(
+          "Haemoglobin is the red pigment in red blood cells. It binds to oxygen in the lungs and releases it to the tissues — giving blood its red colour and red blood cells their name.",
+        ),
+      ],
+      xp: 10,
+      template: [
+        t(
+          "The red pigment in red blood cells that attaches to oxygen is called ___.",
+        ),
+      ],
+      accepted: ["haemoglobin", "hemoglobin"],
+    },
+    {
+      id: "sc-p8",
+      type: "shortText",
+      prompt: [
+        t(
+          "Describe TWO ways a red blood cell's structure is adapted to carry oxygen.",
+        ),
+      ],
+      explanation: [
+        t(
+          "Any two of: it contains haemoglobin which binds oxygen; it has no nucleus, leaving more room for haemoglobin; its flattened disc shape gives a large surface area for fast oxygen exchange; it is flexible so it can squeeze through tiny blood vessels.",
+        ),
+      ],
+      xp: 15,
+      accepted: [
+        "haemoglobin",
+        "no nucleus",
+        "flattened",
+        "disc shape",
+        "large surface area",
+        "flexible",
+        "squeeze",
+      ],
+    },
+  ],
+  mastery: [
+    {
+      id: "sc-m1",
+      type: "shortText",
+      prompt: [
+        t(
+          "Explain the relationship between the structure and function of a specialised cell, using a red blood cell as your example.",
+        ),
+      ],
+      explanation: [
+        t(
+          "The structure of a specialised cell is shaped to suit its function. A red blood cell's job is to carry oxygen, so it is packed with haemoglobin (the oxygen-carrying pigment), has no nucleus to leave maximum room for haemoglobin, and is a flattened flexible disc — giving it a large surface area to pick up and release oxygen quickly and letting it squeeze through tiny vessels. Every feature serves the job.",
+        ),
+      ],
+      xp: 25,
+      accepted: [
+        "haemoglobin",
+        "no nucleus",
+        "flattened",
+        "surface area",
+        "oxygen",
+        "carry oxygen",
+        "flexible",
+        "structure suited to function",
+      ],
+    },
+    {
+      id: "sc-m2",
+      type: "mcq",
+      prompt: [
+        t(
+          "Which statement best expresses the key idea of cell specialisation?",
+        ),
+      ],
+      explanation: [
+        t(
+          "In specialised cells, structure is always related to function. The shape, size and organelles of a cell suit the particular job it does — a nerve cell's branches carry messages, a red blood cell's disc carries oxygen. Form follows function.",
+        ),
+      ],
+      xp: 25,
+      options: [
+        { id: "a", label: [t("All cells in the body are identical")] },
+        {
+          id: "b",
+          label: [
+            t("A cell's structure is adapted to suit its particular function"),
+          ],
+        },
+        { id: "c", label: [t("Specialised cells have no organelles")] },
+        { id: "d", label: [t("Only plant cells are specialised")] },
+      ],
+      correctOptionId: "b",
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
 // Track export
 // ---------------------------------------------------------------------------
 
@@ -1146,6 +1454,7 @@ export const biologyTrack: Track = {
     microscopesLesson,
     cellStructureLesson,
     cellSizesLesson,
+    specialisedCellsLesson,
   ],
   challenge: {
     id: "biology-boss",
@@ -1161,6 +1470,7 @@ export const biologyTrack: Track = {
         "Stile: 2. Microscopes",
         "Stile: 3. Cells: Structure and Function",
         "Stile: EXTENSION: Sizes of cells",
+        "Stile: EXTENSION: Specialised cells",
       ],
       role: "generated",
     },

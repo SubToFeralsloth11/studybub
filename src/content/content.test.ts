@@ -14,6 +14,8 @@ import { algebraFigures } from "./tracks/algebra";
 import { algebraicFractionsAddingFigures } from "./tracks/algebraicFractionsAdding";
 import { algebraicFractionsMultiplyingFigures } from "./tracks/algebraicFractionsMultiplying";
 import { biologyFigures } from "./tracks/biology";
+import { blackDeathFigures } from "./tracks/blackDeath";
+import { chemistryFigures } from "./tracks/chemistry";
 import { decimalsFigures } from "./tracks/decimals";
 import { earthScienceRocksFigures } from "./tracks/earthScienceRocks";
 import { geometryFigures } from "./tracks/geometry";
@@ -73,6 +75,8 @@ describe("authored content", () => {
         ...algebraicFractionsAddingFigures,
         ...algebraicFractionsMultiplyingFigures,
         ...biologyFigures,
+        ...blackDeathFigures,
+        ...chemistryFigures,
         ...decimalsFigures,
         ...earthScienceRocksFigures,
         ...geometryFigures,
@@ -117,10 +121,11 @@ describe("authored content", () => {
 
   it("tracksForSubject returns tracks for the science subject", () => {
     const scienceTracks = tracksForSubject("science");
-    expect(scienceTracks.length).toBe(2);
+    expect(scienceTracks.length).toBe(3);
     const ids = scienceTracks.map((t) => t.id);
     expect(ids).toContain("biology");
     expect(ids).toContain("earth-science-rocks");
+    expect(ids).toContain("chemistry");
   });
 
   it("findSubjectForTrack returns the subject a track belongs to", () => {

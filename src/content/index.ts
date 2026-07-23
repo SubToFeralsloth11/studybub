@@ -18,6 +18,8 @@ import { algebraTrack } from "./tracks/algebra";
 import { algebraicFractionsAddingTrack } from "./tracks/algebraicFractionsAdding";
 import { algebraicFractionsMultiplyingTrack } from "./tracks/algebraicFractionsMultiplying";
 import { biologyTrack } from "./tracks/biology";
+import { blackDeathTrack } from "./tracks/blackDeath";
+import { chemistryTrack } from "./tracks/chemistry";
 import { decimalsTrack } from "./tracks/decimals";
 import { earthScienceRocksTrack } from "./tracks/earthScienceRocks";
 import { geometryTrack } from "./tracks/geometry";
@@ -49,6 +51,8 @@ export const appContent: AppContent = {
     algebraicFractionsAddingTrack,
     algebraicFractionsMultiplyingTrack,
     biologyTrack,
+    blackDeathTrack,
+    chemistryTrack,
     decimalsTrack,
     earthScienceRocksTrack,
     geometryTrack,

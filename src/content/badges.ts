@@ -275,4 +275,33 @@ export const badges: Badge[] = [
     criterion: "boss-pass:algebraic-fractions-multiplying",
     icon: "🏆",
   },
+  {
+    id: "chemistry-master",
+    title: "Chemist",
+    description: "Finish every Chemistry: Elements & the Periodic Table lesson",
+    criterion: "track-complete:chemistry",
+    icon: "⚗️",
+  },
+  {
+    id: "boss-chemistry",
+    title: "Chemistry boss slayer",
+    description:
+      "Pass the Chemistry: Elements & the Periodic Table boss challenge",
+    criterion: "boss-pass:chemistry",
+    icon: "🏆",
+  },
+  {
+    id: "black-death-master",
+    title: "Plague chronicler",
+    description: "Finish every Black Death lesson",
+    criterion: "track-complete:black-death",
+    icon: "💀",
+  },
+  {
+    id: "boss-black-death",
+    title: "Black Death boss slayer",
+    description: "Pass the Black Death boss challenge",
+    criterion: "boss-pass:black-death",
+    icon: "🏆",
+  },
 ];
