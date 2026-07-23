@@ -6,6 +6,10 @@ metadata:
     {{- include "studybub.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.studybub.replicas }}
+  {{- if .Values.studybub.persistence.enabled }}
+  strategy:
+    type: Recreate
+  {{- end }}
   selector:
     matchLabels:
       {{- include "studybub.selectorLabels" . | nindent 6 }}
