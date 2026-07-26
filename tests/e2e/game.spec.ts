@@ -19,7 +19,10 @@ async function answerQuestion(page: Page) {
   const leftButtons = page.locator('button[aria-label^="Left:"]');
   const rightButtons = page.locator('button[aria-label^="Right:"]');
   if ((await leftButtons.count()) > 0 && (await rightButtons.count()) > 0) {
-    const count = Math.min(await leftButtons.count(), await rightButtons.count());
+    const count = Math.min(
+      await leftButtons.count(),
+      await rightButtons.count(),
+    );
     for (let index = 0; index < count; index++) {
       await leftButtons.nth(index).click();
       await rightButtons.nth(index).click();
@@ -71,7 +74,13 @@ test("embed Eaglercraft and answer a practice question", async ({ page }) => {
     await continueButton.click();
 
     // If the dialog disappeared, the burst is done.
-    if (!(await page.getByRole("dialog").isVisible().catch(() => false))) break;
+    if (
+      !(await page
+        .getByRole("dialog")
+        .isVisible()
+        .catch(() => false))
+    )
+      break;
   }
 
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 10_000 });
