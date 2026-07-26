@@ -63,6 +63,12 @@ var CONTENT_TYPES = {
  */
 function serveStatic(pathname) {
     var rel = pathname === "/" ? "/index.html" : pathname;
+    // When served behind a reverse proxy or Ingress at /browserquest/, strip
+    // that prefix so the file paths resolve inside the client directory.
+    if (rel.indexOf("/browserquest/") === 0) {
+        rel = rel.slice("/browserquest".length) || "/";
+        if (rel === "/") rel = "/index.html";
+    }
     var base, subpath;
     if (rel.indexOf("/shared/") === 0) {
         base = SHARED_DIR;

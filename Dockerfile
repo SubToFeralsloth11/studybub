@@ -24,6 +24,12 @@ COPY --from=build /app/scripts ./scripts
 
 RUN bun install --production --frozen-lockfile
 
+# Copy the vendored BrowserQuest game server.
+COPY --from=build /app/vendor/browserquest ./vendor/browserquest
+
+# Install BrowserQuest server dependencies (ws, underscore, log).
+RUN cd vendor/browserquest && bun install && cd /app
+
 # Create data directory for SQLite.
 RUN mkdir -p /data
 
@@ -31,5 +37,7 @@ ENV NODE_ENV=production
 ENV STUDYBUB_DB_PATH=/data/studybub.db
 
 EXPOSE 3000
+EXPOSE 8000
 
-CMD ["bun", "run", ".output/server/index.mjs"]
+# Run the BrowserQuest server in the background, then StudyBub in foreground.
+CMD ["sh", "-c", "bun run vendor/browserquest/server/js/main.js & bun run .output/server/index.mjs"]

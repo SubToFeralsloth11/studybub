@@ -44,3 +44,9 @@ studybub:
       - run
       - scripts/migrate.ts
       - migrate
+
+# BrowserQuest game server, self-hosted from vendored Mozilla source.
+# The server runs inside the StudyBub container on port 8000 and serves the
+# game client via Ingress at /browserquest/.
+browserquest:
+  enabled: false

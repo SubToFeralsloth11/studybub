@@ -22,6 +22,18 @@ export default defineConfig({
     // it on the network.
     host: "127.0.0.1",
     port: 3000,
+    // In dev mode the BrowserQuest server runs beside StudyBub on port 8000.
+    // The studybub page embeds /browserquest/ as a same-origin iframe; Vite
+    // proxies HTTP and WebSocket traffic to the BQ game server so the client
+    // connects back to the same host.
+    proxy: {
+      "/browserquest": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        ws: true,
+        rewrite: (path: string) => path.replace(/^\/browserquest/, ""),
+      },
+    },
   },
   ssr: {
     // Bun built-in modules are resolved at runtime by the Bun server,
@@ -42,7 +54,17 @@ export default defineConfig({
     // the Bun runtime (Bun.serve) that production runs under. Without this
     // Nitro auto-selects the node-server preset, producing output that runs
     // under Bun but is not Bun-native.
-    nitro({ preset: "bun" }),
+    nitro({
+      preset: "bun",
+      // In production the BrowserQuest server runs in the same container on
+      // port 8000. The studybub page embeds /browserquest/ as a same-origin
+      // iframe; Nitro reverse-proxies those requests to the local BQ server.
+      routeRules: {
+        "/browserquest/**": {
+          proxy: { to: "http://127.0.0.1:8000/**" },
+        },
+      },
+    }),
     viteReact(),
   ],
 });

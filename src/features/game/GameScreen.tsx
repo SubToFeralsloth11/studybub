@@ -26,8 +26,7 @@ type GameId = "pokerogue" | "browserquest";
 
 const GAME_URLS: Record<GameId, string> = {
   pokerogue: "https://pokerogue.net",
-  browserquest:
-    import.meta.env.VITE_BROWSERQUEST_URL ?? "http://localhost:8000",
+  browserquest: "/browserquest/",
 };
 
 /** Human-readable names for each game, shown in the intro and iframe title. */

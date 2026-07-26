@@ -7,6 +7,8 @@ studybub:
   persistence:
     enabled: true
     existingClaim: studybub-studybub-data
+browserquest:
+  enabled: true
 ingress:
   enabled: true
   className: nginx
