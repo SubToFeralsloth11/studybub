@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AppHeader } from "../../components/AppHeader";
 import { Button } from "../../components/Button";
@@ -12,58 +12,51 @@ import { useProgress } from "../../state/progressContext";
 import { useTrackFromRoute } from "../../state/useTrackFromRoute";
 import { QuestionView } from "../lesson/QuestionView";
 
-/**
- * The embeddable games. Each is a real, third-party title framed inside an
- * iframe (not forked), with practice questions overlaid by StudyBub.
- *
- * - `pokerogue`: the live PokéRogue roguelite at pokerogue.net (no
- *   frame-ancestors header, so it embeds directly).
- * - `browserquest`: Mozilla's BrowserQuest, self-hosted from vendored source
- *   under vendor/browserquest (the game server also serves the client). The URL
- *   points at that server and can be overridden for deployment.
- */
-type GameId = "pokerogue" | "browserquest";
+const GAME_URL = "/eaglercraft/";
+const GAME_NAME = "Eaglercraft";
 
-const GAME_URLS: Record<GameId, string> = {
-  pokerogue: "https://pokerogue.net",
-  browserquest: "/browserquest/",
-};
-
-/** Human-readable names for each game, shown in the intro and iframe title. */
-const GAME_NAMES: Record<GameId, string> = {
-  pokerogue: "PokéRogue",
-  browserquest: "BrowserQuest",
-};
-
-/** Seconds of play between automatic question pauses. */
-const QUESTION_INTERVAL_SECONDS = 90;
+const INTERVAL_MIN = 180;
+const INTERVAL_MAX = 300;
+const BURST_MIN = 3;
+const BURST_MAX = 5;
+const RECENT_LIMIT = 10;
 
 interface SessionStats {
-  /** Questions answered this session. */
   answered: number;
-  /** Questions answered correctly this session. */
   correct: number;
-  /** XP banked this session. */
   xp: number;
 }
 
-/**
- * The arcade-game route. Embeds the real PokéRogue in an iframe and overlays a
- * StudyBub question from the current track at regular intervals (or on demand):
- * correct answers feed the shared XP/streak/badge system, then play resumes.
- *
- * @returns The rendered game screen.
- */
+function randomBetween(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pickUnused(poolSize: number, recentlyUsed: number[]): number {
+  const recentlySet = new Set(recentlyUsed);
+  const available = Array.from({ length: poolSize }, (_, i) => i).filter(
+    (i) => !recentlySet.has(i),
+  );
+  if (available.length > 0) {
+    return available[Math.floor(Math.random() * available.length)];
+  }
+  return Math.floor(Math.random() * poolSize);
+}
+
 export function GameScreen() {
   const { track } = useTrackFromRoute();
   const { dispatch: progressDispatch } = useProgress();
 
   const pool = useMemo(() => (track ? gameQuestions(track) : []), [track]);
+  const recentlyUsed = useRef<number[]>([]);
+
   const [phase, setPhase] = useState<"intro" | "playing">("intro");
-  const [game, setGame] = useState<GameId>("pokerogue");
-  const [questionIndex, setQuestionIndex] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(
+    randomBetween(INTERVAL_MIN, INTERVAL_MAX),
+  );
+  const [burstSize, setBurstSize] = useState(0);
+  const [burstAnswered, setBurstAnswered] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(QUESTION_INTERVAL_SECONDS);
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [stats, setStats] = useState<SessionStats>({
     answered: 0,
     correct: 0,
@@ -72,43 +65,93 @@ export function GameScreen() {
 
   const hasQuestions = pool.length > 0;
 
-  // Countdown to the next automatic question pause. Paused while a question is
-  // open or when the track has no questions to ask.
+  const markUsed = useCallback(
+    (idx: number) => {
+      recentlyUsed.current.push(idx);
+      if (recentlyUsed.current.length > RECENT_LIMIT) {
+        recentlyUsed.current = recentlyUsed.current.slice(-RECENT_LIMIT);
+      }
+    },
+    [],
+  );
+
+  const nextQuestion = useCallback(() => {
+    const idx = pickUnused(pool.length, recentlyUsed.current);
+    setQuestionIndex(idx);
+    setBurstAnswered((n) => n + 1);
+  }, [pool.length]);
+
+  const triggerBurst = useCallback(() => {
+    const size = randomBetween(BURST_MIN, BURST_MAX);
+    setBurstSize(size);
+    setBurstAnswered(0);
+    const idx = pickUnused(pool.length, recentlyUsed.current);
+    setQuestionIndex(idx);
+    setShowQuestion(true);
+  }, [pool.length]);
+
+  const handleAnswered = useCallback(
+    (correct: boolean, xp: number) => {
+      if (correct) {
+        progressDispatch({
+          type: "ANSWER_CORRECT",
+          xp,
+          today: localDateIso(),
+        });
+      }
+      setStats((prev) => ({
+        answered: prev.answered + 1,
+        correct: prev.correct + (correct ? 1 : 0),
+        xp: prev.xp + (correct ? xp : 0),
+      }));
+    },
+    [progressDispatch],
+  );
+
+  const handleContinue = useCallback(() => {
+    markUsed(questionIndex);
+    if (burstAnswered + 1 < burstSize) {
+      nextQuestion();
+    } else {
+      setShowQuestion(false);
+      setSecondsLeft(randomBetween(INTERVAL_MIN, INTERVAL_MAX));
+    }
+  }, [burstAnswered, burstSize, markUsed, nextQuestion, questionIndex]);
+
+  const handleStart = useCallback(() => {
+    setSecondsLeft(randomBetween(INTERVAL_MIN, INTERVAL_MAX));
+    setPhase("playing");
+  }, []);
+
+  // Countdown between bursts.
   useEffect(() => {
     if (phase !== "playing" || showQuestion || !hasQuestions) return;
     const id = setInterval(() => {
-      setSecondsLeft((remaining) => {
-        if (remaining <= 1) {
-          setShowQuestion(true);
-          return QUESTION_INTERVAL_SECONDS;
-        }
-        return remaining - 1;
+      setSecondsLeft((s) => {
+        if (s <= 1) return 0;
+        return s - 1;
       });
     }, 1000);
     return () => clearInterval(id);
   }, [phase, showQuestion, hasQuestions]);
 
+  // When countdown reaches 0, trigger a burst.
+  useEffect(() => {
+    if (
+      secondsLeft === 0 &&
+      phase === "playing" &&
+      !showQuestion &&
+      hasQuestions
+    ) {
+      triggerBurst();
+    }
+  }, [secondsLeft, phase, showQuestion, hasQuestions, triggerBurst]);
+
   if (!track) {
     return <NotFound title="Game not found" />;
   }
 
-  const currentQuestion = pool[questionIndex % pool.length];
-
-  const handleAnswered = (correct: boolean, xp: number): void => {
-    if (correct) {
-      progressDispatch({ type: "ANSWER_CORRECT", xp, today: localDateIso() });
-    }
-    setStats((previous) => ({
-      answered: previous.answered + 1,
-      correct: previous.correct + (correct ? 1 : 0),
-      xp: previous.xp + (correct ? xp : 0),
-    }));
-  };
-
-  const handleContinue = (): void => {
-    setQuestionIndex((index) => index + 1);
-    setShowQuestion(false);
-  };
+  const currentQuestion = pool[questionIndex];
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col">
@@ -123,15 +166,16 @@ export function GameScreen() {
         secondsLeft={secondsLeft}
         hasQuestions={hasQuestions}
         playing={phase === "playing"}
-        onPause={() => setShowQuestion(true)}
+        showQuestion={showQuestion}
+        burstSize={burstSize}
+        burstIndex={burstAnswered}
+        onPause={triggerBurst}
       />
 
       <main className="flex flex-1 flex-col items-center px-5 py-4">
         {phase === "intro" ? (
           <Intro
-            game={game}
-            onSelectGame={setGame}
-            onStart={() => setPhase("playing")}
+            onStart={handleStart}
             questionCount={pool.length}
             trackTitle={track.title}
             subjectId={track.subjectId}
@@ -142,16 +186,17 @@ export function GameScreen() {
         {phase === "playing" ? (
           <div className="relative w-full">
             <iframe
-              key={game}
-              src={GAME_URLS[game]}
-              title={GAME_NAMES[game]}
+              src={GAME_URL}
+              title={GAME_NAME}
               className="h-[70vh] w-full rounded-bub shadow-bub-lg ring-1 ring-hairline"
               allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
-              referrerPolicy="no-referrer"
             />
             {showQuestion && currentQuestion ? (
               <QuestionOverlay
+                key={`${questionIndex}-${burstAnswered}`}
                 question={currentQuestion}
+                burstIndex={burstAnswered}
+                burstSize={burstSize}
                 onAnswered={handleAnswered}
                 onContinue={handleContinue}
               />
@@ -168,6 +213,9 @@ interface GameHudProps {
   secondsLeft: number;
   hasQuestions: boolean;
   playing: boolean;
+  showQuestion: boolean;
+  burstSize: number;
+  burstIndex: number;
   onPause: () => void;
 }
 
@@ -176,27 +224,38 @@ function GameHud({
   secondsLeft,
   hasQuestions,
   playing,
+  showQuestion,
+  burstSize,
+  burstIndex,
   onPause,
 }: GameHudProps) {
   if (!playing) return null;
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-3 px-5 pb-2 text-sm">
       <span className="font-semibold text-ink">
-        ✅ {stats.correct}/{stats.answered}
+        {stats.correct}/{stats.answered}
       </span>
       <span className="text-muted">·</span>
-      <span className="font-semibold text-ink">⭐ {stats.xp} XP</span>
+      <span className="font-semibold text-ink">{stats.xp} XP</span>
       {hasQuestions ? (
         <>
           <span className="text-muted">·</span>
-          <span className="text-muted">Next question in {secondsLeft}s</span>
-          <button
-            type="button"
-            onClick={onPause}
-            className="rounded-pill bg-brand-soft px-3 py-1 font-semibold text-brand transition hover:bg-brand-deep/15"
-          >
-            ⚡ Practise now
-          </button>
+          {showQuestion ? (
+            <span className="text-muted">
+              Question {burstIndex + 1} of {burstSize}
+            </span>
+          ) : (
+            <>
+              <span className="text-muted">Next quiz in {secondsLeft}s</span>
+              <button
+                type="button"
+                onClick={onPause}
+                className="rounded-pill bg-brand-soft px-3 py-1 font-semibold text-brand transition hover:bg-brand-deep/15"
+              >
+                Practise now
+              </button>
+            </>
+          )}
         </>
       ) : (
         <span className="text-muted">No questions for this track yet</span>
@@ -206,8 +265,6 @@ function GameHud({
 }
 
 interface IntroProps {
-  game: GameId;
-  onSelectGame: (game: GameId) => void;
   onStart: () => void;
   questionCount: number;
   trackTitle: string;
@@ -216,8 +273,6 @@ interface IntroProps {
 }
 
 function Intro({
-  game,
-  onSelectGame,
   onStart,
   questionCount,
   trackTitle,
@@ -231,43 +286,20 @@ function Intro({
       </div>
       <h1 className="text-2xl text-ink">Arcade mode</h1>
       <p className="mt-3 text-muted">
-        Play a real game in full. Every {QUESTION_INTERVAL_SECONDS} seconds it
-        pauses with a {trackTitle} question — answer right to bank XP and keep
-        your streak going, or tap “Practise now” any time.
+        Play Eaglercraft (Minecraft in your browser). The game pauses
+        periodically with a quick quiz of {BURST_MIN}–{BURST_MAX}{" "}
+        {trackTitle} questions — answer right to bank XP and keep your streak
+        going, or tap &ldquo;Practise now&rdquo; any time.
       </p>
-      <p className="mt-2 text-sm text-muted">
-        {questionCount > 0
-          ? `${questionCount} questions ready.`
-          : "This track has no questions yet — you can still play for fun."}
-      </p>
-
-      <fieldset className="mt-6 flex flex-col items-center gap-3">
-        <legend className="sr-only">Choose a game</legend>
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="radio"
-            name="game"
-            value="pokerogue"
-            checked={game === "pokerogue"}
-            onChange={() => onSelectGame("pokerogue")}
-            className="accent-brand"
-          />
-          <span className="font-semibold text-ink">PokéRogue</span>
-          <span className="text-muted">— Pokémon roguelite (online)</span>
-        </label>
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="radio"
-            name="game"
-            value="browserquest"
-            checked={game === "browserquest"}
-            onChange={() => onSelectGame("browserquest")}
-            className="accent-brand"
-          />
-          <span className="font-semibold text-ink">BrowserQuest</span>
-          <span className="text-muted">— multiplayer RPG (self-hosted)</span>
-        </label>
-      </fieldset>
+      {questionCount > 0 ? (
+        <p className="mt-2 text-sm text-muted">
+          {questionCount} questions ready.
+        </p>
+      ) : (
+        <p className="mt-2 text-sm text-muted">
+          This track has no questions yet — you can still play for fun.
+        </p>
+      )}
 
       <div className="mt-6 flex justify-center gap-3">
         <Link
@@ -277,12 +309,11 @@ function Intro({
         >
           ← Back to map
         </Link>
-        <Button onClick={onStart}>Play {GAME_NAMES[game]} →</Button>
+        <Button onClick={onStart}>Play Eaglercraft →</Button>
       </div>
       <p className="mt-4 text-xs text-muted">
-        {game === "pokerogue"
-          ? "PokéRogue is a third-party open-source game loaded from pokerogue.net."
-          : "BrowserQuest is Mozilla’s open-source game, self-hosted from this server."}
+        Eaglercraft is a browser-compatible Minecraft client, self-hosted from
+        this server.
       </p>
     </Card>
   );
@@ -290,12 +321,16 @@ function Intro({
 
 interface QuestionOverlayProps {
   question: import("../../domain/content/types").Question;
+  burstIndex: number;
+  burstSize: number;
   onAnswered: (correct: boolean, xp: number) => void;
   onContinue: () => void;
 }
 
 function QuestionOverlay({
   question,
+  burstIndex,
+  burstSize,
   onAnswered,
   onContinue,
 }: QuestionOverlayProps) {
@@ -310,7 +345,7 @@ function QuestionOverlay({
       <Card raised className="w-full max-w-xl p-6 md:p-8">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm font-semibold text-brand">
-            Pause! Answer to power up
+            Question {burstIndex + 1} of {burstSize} — answer to power up
           </p>
           <button
             type="button"

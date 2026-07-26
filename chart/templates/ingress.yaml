@@ -37,14 +37,5 @@ spec:
                 port:
                   number: {{ $.Values.studybub.service.port }}
           {{- end }}
-          {{- if $.Values.browserquest.enabled }}
-          - path: /browserquest
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ $.Release.Name }}-studybub
-                port:
-                  number: 8000
-          {{- end }}
     {{- end }}
 {{- end }}

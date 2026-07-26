@@ -8,8 +8,6 @@ import { renderApp } from "../../test/renderApp";
 describe("GameScreen", () => {
   beforeEach(() => {
     clearMockProgress();
-    // The countdown uses setInterval; jsdom provides it but we keep tests
-    // deterministic by controlling timers.
     vi.useFakeTimers();
   });
 
@@ -23,30 +21,28 @@ describe("GameScreen", () => {
       screen.getByRole("heading", { name: "Arcade mode" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Play PokéRogue/ }),
+      screen.getByRole("button", { name: /Play Eaglercraft/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Back to map/i }),
     ).toBeInTheDocument();
   });
 
-  it("embeds the real game and surfaces a practice question on demand", async () => {
+  it("embeds Eaglercraft and surfaces a practice question on demand", async () => {
     await renderApp(<GameScreen />, {
       route: "/game/algebra",
       path: "/game/$trackId",
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /Play PokéRogue/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Play Eaglercraft/ }));
     });
 
-    // The real PokéRogue is embedded in an iframe.
-    expect(screen.getByTitle("PokéRogue")).toHaveAttribute(
+    expect(screen.getByTitle("Eaglercraft")).toHaveAttribute(
       "src",
-      "https://pokerogue.net",
+      "/eaglercraft/",
     );
 
-    // The learner can opt into a practice break immediately.
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Practise now/i }));
     });

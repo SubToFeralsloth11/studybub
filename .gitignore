@@ -13,8 +13,5 @@ studybub.db*
 # pi-subagents runtime artifacts
 .pi-subagents
 
-# Vendored BrowserQuest: regenerable build output and dependencies.
-vendor/browserquest/node_modules
-vendor/browserquest/client-build
-vendor/browserquest/bin/*.bak
-vendor/browserquest/server/js/*.bak
+# Vendored BrowserQuest (retired, kept for reference).
+vendor/browserquest/

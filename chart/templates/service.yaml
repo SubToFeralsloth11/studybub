@@ -11,9 +11,5 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    - port: 8000
-      targetPort: browserquest
-      protocol: TCP
-      name: browserquest
   selector:
     {{- include "studybub.selectorLabels" . | nindent 4 }}

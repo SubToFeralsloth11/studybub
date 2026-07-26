@@ -1,9 +1,5 @@
 studybub:
   image:
-    # Flux reconciles from these defaults (the Helm deploy job is gone). This
-    # must match where CI pushes: ghcr.io/<owner>/<repo>. The previous value
-    # "ghcr.io/studybub/studybub" pointed at a non-existent package, causing
-    # ImagePullBackOff and preventing rollouts.
     repository: ghcr.io/subtoferalsloth11/studybub
     tag: "latest"
     pullPolicy: Always
@@ -44,9 +40,3 @@ studybub:
       - run
       - scripts/migrate.ts
       - migrate
-
-# BrowserQuest game server, self-hosted from vendored Mozilla source.
-# The server runs inside the StudyBub container on port 8000 and serves the
-# game client via Ingress at /browserquest/.
-browserquest:
-  enabled: false

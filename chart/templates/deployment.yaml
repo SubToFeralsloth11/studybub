@@ -44,9 +44,6 @@ spec:
             - name: http
               containerPort: {{ .Values.studybub.service.port }}
               protocol: TCP
-            - name: browserquest
-              containerPort: 8000
-              protocol: TCP
           envFrom:
             {{- if .Values.studybub.config }}
             - configMapRef:

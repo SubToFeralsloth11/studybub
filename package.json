@@ -7,7 +7,6 @@
   "description": "StudyBub - an interactive, gamified multi-subject learning platform for a single learner.",
   "scripts": {
     "dev": "bun --bun vite dev",
-    "dev:browserquest": "node vendor/browserquest/server/js/main.js",
     "build": "tsc -b && vite build",
     "start": "bun run scripts/server.ts",
     "preview": "vite preview",
