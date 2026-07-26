@@ -65,15 +65,12 @@ export function GameScreen() {
 
   const hasQuestions = pool.length > 0;
 
-  const markUsed = useCallback(
-    (idx: number) => {
-      recentlyUsed.current.push(idx);
-      if (recentlyUsed.current.length > RECENT_LIMIT) {
-        recentlyUsed.current = recentlyUsed.current.slice(-RECENT_LIMIT);
-      }
-    },
-    [],
-  );
+  const markUsed = useCallback((idx: number) => {
+    recentlyUsed.current.push(idx);
+    if (recentlyUsed.current.length > RECENT_LIMIT) {
+      recentlyUsed.current = recentlyUsed.current.slice(-RECENT_LIMIT);
+    }
+  }, []);
 
   const nextQuestion = useCallback(() => {
     const idx = pickUnused(pool.length, recentlyUsed.current);
@@ -287,9 +284,9 @@ function Intro({
       <h1 className="text-2xl text-ink">Arcade mode</h1>
       <p className="mt-3 text-muted">
         Play Eaglercraft (Minecraft in your browser). The game pauses
-        periodically with a quick quiz of {BURST_MIN}–{BURST_MAX}{" "}
-        {trackTitle} questions — answer right to bank XP and keep your streak
-        going, or tap &ldquo;Practise now&rdquo; any time.
+        periodically with a quick quiz of {BURST_MIN}–{BURST_MAX} {trackTitle}{" "}
+        questions — answer right to bank XP and keep your streak going, or tap
+        &ldquo;Practise now&rdquo; any time.
       </p>
       {questionCount > 0 ? (
         <p className="mt-2 text-sm text-muted">

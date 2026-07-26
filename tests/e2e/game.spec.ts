@@ -15,13 +15,12 @@ test("embed Eaglercraft and answer a practice question", async ({ page }) => {
   await expect(frame.owner()).toBeVisible();
 
   await page.getByRole("button", { name: /Practise now/i }).click();
-  await expect(page.getByText(/Question \d of \d/)).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByText(/answer to power up/)).toBeVisible();
   await page.locator('input[type="radio"]').first().check();
   await page.getByRole("button", { name: /check answer/i }).click();
   await page.getByRole("button", { name: /back to game/i }).click();
 
-  await expect(
-    page.getByText(/Question \d of \d/),
-  ).toBeHidden();
+  await expect(page.getByRole("dialog")).toBeHidden();
   await expect(frame.owner()).toBeVisible();
 });
