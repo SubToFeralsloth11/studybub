@@ -38,6 +38,9 @@ export default defineConfig({
         "src/routeTree.gen.ts",
         "src/test/**",
         "src/**/*.d.ts",
+        // Imperative canvas rendering for the arcade game. jsdom has no real
+        // canvas, so this module is exercised end-to-end by Playwright only.
+        "src/features/game/gameRenderer.ts",
       ],
       thresholds: {
         lines: 80,

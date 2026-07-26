@@ -166,6 +166,15 @@ export function TrackMapScreen() {
         title={track.title}
         right={<RewardBar />}
       />
+      <div className="mx-auto w-full max-w-5xl px-5">
+        <Link
+          to="/game/$trackId"
+          params={{ trackId: track.id }}
+          className="inline-flex items-center gap-2 rounded-pill bg-brand-soft px-4 py-2 text-sm font-semibold text-brand transition hover:bg-brand-deep/15"
+        >
+          🫧 Play Bub Quest (arcade practise)
+        </Link>
+      </div>
       <main className="flex flex-1 flex-col items-center px-5 py-8">
         <ol className="flex flex-col items-center gap-0">
           {sorted.map((lesson) => (

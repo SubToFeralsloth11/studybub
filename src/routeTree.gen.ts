@@ -16,6 +16,7 @@ import { Route as BadgesRouteImport } from './routes/badges'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubjectSubjectIdRouteImport } from './routes/subject.$subjectId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as GameTrackIdRouteImport } from './routes/game.$trackId'
 import { Route as ChallengeTrackIdRouteImport } from './routes/challenge.$trackId'
 import { Route as LessonTrackIdLessonIdRouteImport } from './routes/lesson.$trackId.$lessonId'
 import { Route as SubjectSubjectIdTrackTrackIdRouteImport } from './routes/subject.$subjectId.track.$trackId'
@@ -55,6 +56,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GameTrackIdRoute = GameTrackIdRouteImport.update({
+  id: '/game/$trackId',
+  path: '/game/$trackId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChallengeTrackIdRoute = ChallengeTrackIdRouteImport.update({
   id: '/challenge/$trackId',
   path: '/challenge/$trackId',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/challenge/$trackId': typeof ChallengeTrackIdRoute
+  '/game/$trackId': typeof GameTrackIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/subject/$subjectId': typeof SubjectSubjectIdRouteWithChildren
   '/lesson/$trackId/$lessonId': typeof LessonTrackIdLessonIdRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/challenge/$trackId': typeof ChallengeTrackIdRoute
+  '/game/$trackId': typeof GameTrackIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/subject/$subjectId': typeof SubjectSubjectIdRouteWithChildren
   '/lesson/$trackId/$lessonId': typeof LessonTrackIdLessonIdRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/challenge/$trackId': typeof ChallengeTrackIdRoute
+  '/game/$trackId': typeof GameTrackIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/subject/$subjectId': typeof SubjectSubjectIdRouteWithChildren
   '/lesson/$trackId/$lessonId': typeof LessonTrackIdLessonIdRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/challenge/$trackId'
+    | '/game/$trackId'
     | '/invite/$token'
     | '/subject/$subjectId'
     | '/lesson/$trackId/$lessonId'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/challenge/$trackId'
+    | '/game/$trackId'
     | '/invite/$token'
     | '/subject/$subjectId'
     | '/lesson/$trackId/$lessonId'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/challenge/$trackId'
+    | '/game/$trackId'
     | '/invite/$token'
     | '/subject/$subjectId'
     | '/lesson/$trackId/$lessonId'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   ChallengeTrackIdRoute: typeof ChallengeTrackIdRoute
+  GameTrackIdRoute: typeof GameTrackIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   SubjectSubjectIdRoute: typeof SubjectSubjectIdRouteWithChildren
   LessonTrackIdLessonIdRoute: typeof LessonTrackIdLessonIdRoute
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/game/$trackId': {
+      id: '/game/$trackId'
+      path: '/game/$trackId'
+      fullPath: '/game/$trackId'
+      preLoaderRoute: typeof GameTrackIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/challenge/$trackId': {
       id: '/challenge/$trackId'
       path: '/challenge/$trackId'
@@ -253,6 +273,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   ChallengeTrackIdRoute: ChallengeTrackIdRoute,
+  GameTrackIdRoute: GameTrackIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   SubjectSubjectIdRoute: SubjectSubjectIdRouteWithChildren,
   LessonTrackIdLessonIdRoute: LessonTrackIdLessonIdRoute,
