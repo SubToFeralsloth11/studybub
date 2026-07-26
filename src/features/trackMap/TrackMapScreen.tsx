@@ -172,7 +172,7 @@ export function TrackMapScreen() {
           params={{ trackId: track.id }}
           className="inline-flex items-center gap-2 rounded-pill bg-brand-soft px-4 py-2 text-sm font-semibold text-brand transition hover:bg-brand-deep/15"
         >
-          🎮 Arcade: play PokéRogue with practice breaks
+          🎮 Arcade: play with practice breaks
         </Link>
       </div>
       <main className="flex flex-1 flex-col items-center px-5 py-8">
