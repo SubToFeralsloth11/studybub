@@ -26,6 +26,9 @@ export default tseslint.config(
       ".output",
       ".vinxi",
       "src/routeTree.gen.ts",
+      // Vendored third-party game (Mozilla BrowserQuest); its 2012 code style is
+      // not subject to the project lint rules.
+      "vendor",
     ],
   },
 

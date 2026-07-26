@@ -13,12 +13,28 @@ import { useTrackFromRoute } from "../../state/useTrackFromRoute";
 import { QuestionView } from "../lesson/QuestionView";
 
 /**
- * The live, third-party game embedded by the arcade mode. Framing the public
- * site (rather than forking it) avoids redistributing the game's code or assets.
- * PokéRogue is a browser Pokémon roguelite and sends no frame-ancestors header,
- * so it can be embedded directly.
+ * The embeddable games. Each is a real, third-party title framed inside an
+ * iframe (not forked), with practice questions overlaid by StudyBub.
+ *
+ * - `pokerogue`: the live PokéRogue roguelite at pokerogue.net (no
+ *   frame-ancestors header, so it embeds directly).
+ * - `browserquest`: Mozilla's BrowserQuest, self-hosted from vendored source
+ *   under vendor/browserquest (the game server also serves the client). The URL
+ *   points at that server and can be overridden for deployment.
  */
-const GAME_URL = "https://pokerogue.net";
+type GameId = "pokerogue" | "browserquest";
+
+const GAME_URLS: Record<GameId, string> = {
+  pokerogue: "https://pokerogue.net",
+  browserquest:
+    import.meta.env.VITE_BROWSERQUEST_URL ?? "http://localhost:8000",
+};
+
+/** Human-readable names for each game, shown in the intro and iframe title. */
+const GAME_NAMES: Record<GameId, string> = {
+  pokerogue: "PokéRogue",
+  browserquest: "BrowserQuest",
+};
 
 /** Seconds of play between automatic question pauses. */
 const QUESTION_INTERVAL_SECONDS = 90;
@@ -45,6 +61,7 @@ export function GameScreen() {
 
   const pool = useMemo(() => (track ? gameQuestions(track) : []), [track]);
   const [phase, setPhase] = useState<"intro" | "playing">("intro");
+  const [game, setGame] = useState<GameId>("pokerogue");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(QUESTION_INTERVAL_SECONDS);
@@ -113,6 +130,8 @@ export function GameScreen() {
       <main className="flex flex-1 flex-col items-center px-5 py-4">
         {phase === "intro" ? (
           <Intro
+            game={game}
+            onSelectGame={setGame}
             onStart={() => setPhase("playing")}
             questionCount={pool.length}
             trackTitle={track.title}
@@ -124,8 +143,9 @@ export function GameScreen() {
         {phase === "playing" ? (
           <div className="relative w-full">
             <iframe
-              src={GAME_URL}
-              title="PokéRogue"
+              key={game}
+              src={GAME_URLS[game]}
+              title={GAME_NAMES[game]}
               className="h-[70vh] w-full rounded-bub shadow-bub-lg ring-1 ring-hairline"
               allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
               referrerPolicy="no-referrer"
@@ -187,6 +207,8 @@ function GameHud({
 }
 
 interface IntroProps {
+  game: GameId;
+  onSelectGame: (game: GameId) => void;
   onStart: () => void;
   questionCount: number;
   trackTitle: string;
@@ -195,6 +217,8 @@ interface IntroProps {
 }
 
 function Intro({
+  game,
+  onSelectGame,
   onStart,
   questionCount,
   trackTitle,
@@ -208,16 +232,44 @@ function Intro({
       </div>
       <h1 className="text-2xl text-ink">Arcade mode</h1>
       <p className="mt-3 text-muted">
-        Play <strong>PokéRogue</strong> — a browser Pokémon roguelite — in full.
-        Every {QUESTION_INTERVAL_SECONDS} seconds the game is paused with a{" "}
-        {trackTitle} question. Answer right to bank XP and keep your streak
-        going; answer whenever you like with “Practise now”.
+        Play a real game in full. Every {QUESTION_INTERVAL_SECONDS} seconds it
+        pauses with a {trackTitle} question — answer right to bank XP and keep
+        your streak going, or tap “Practise now” any time.
       </p>
       <p className="mt-2 text-sm text-muted">
         {questionCount > 0
           ? `${questionCount} questions ready.`
           : "This track has no questions yet — you can still play for fun."}
       </p>
+
+      <fieldset className="mt-6 flex flex-col items-center gap-3">
+        <legend className="sr-only">Choose a game</legend>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="radio"
+            name="game"
+            value="pokerogue"
+            checked={game === "pokerogue"}
+            onChange={() => onSelectGame("pokerogue")}
+            className="accent-brand"
+          />
+          <span className="font-semibold text-ink">PokéRogue</span>
+          <span className="text-muted">— Pokémon roguelite (online)</span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="radio"
+            name="game"
+            value="browserquest"
+            checked={game === "browserquest"}
+            onChange={() => onSelectGame("browserquest")}
+            className="accent-brand"
+          />
+          <span className="font-semibold text-ink">BrowserQuest</span>
+          <span className="text-muted">— multiplayer RPG (self-hosted)</span>
+        </label>
+      </fieldset>
+
       <div className="mt-6 flex justify-center gap-3">
         <Link
           to="/subject/$subjectId/track/$trackId"
@@ -226,10 +278,12 @@ function Intro({
         >
           ← Back to map
         </Link>
-        <Button onClick={onStart}>Play PokéRogue →</Button>
+        <Button onClick={onStart}>Play {GAME_NAMES[game]} →</Button>
       </div>
       <p className="mt-4 text-xs text-muted">
-        PokéRogue is a third-party open-source game loaded from pokerogue.net.
+        {game === "pokerogue"
+          ? "PokéRogue is a third-party open-source game loaded from pokerogue.net."
+          : "BrowserQuest is Mozilla’s open-source game, self-hosted from this server."}
       </p>
     </Card>
   );

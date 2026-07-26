@@ -7,3 +7,4 @@ test-results
 bun.lock
 src/routeTree.gen.ts
 chart/templates
+vendor

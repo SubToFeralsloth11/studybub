@@ -1,0 +1,15 @@
+{
+    "name": "browserquest-server",
+    "version": "1.0.0",
+    "private": true,
+    "description": "BrowserQuest game server (Mozilla source, modernised to run on current Node).",
+    "license": "MPL-2.0",
+    "dependencies": {
+        "log": "^1.4.0",
+        "underscore": "^1.13.0",
+        "ws": "^8.18.0"
+    },
+    "scripts": {
+        "start": "node server/js/main.js"
+    }
+}
