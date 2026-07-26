@@ -1,37 +1,33 @@
 import { expect, test } from "@playwright/test";
 
-// End-to-end flow for the Bub Quest arcade game. The dev server is started by
-// Playwright with VITE_BYPASS_AUTH=true (see playwright.config.ts), so the
-// /game/$trackId route renders without a passkey. The flow starts a game,
-// moves to collect orbs until a question pause appears, answers it, and
-// confirms play resumes.
+// End-to-end flow for arcade mode. The dev server runs with VITE_BYPASS_AUTH=true
+// (see playwright.config.ts). The flow starts the game, confirms the real
+// PokéRogue is embedded, and surfaces a practice question on demand. The full
+// countdown is avoided by using the "Practise now" button.
 
 const GAME = "/game/algebra";
 
-test("play, answer a question pause, and resume", async ({ page }) => {
+test("embed the real game and answer a practice question", async ({ page }) => {
   await page.goto(GAME);
   await page.waitForLoadState("networkidle");
   await expect(
-    page.getByRole("heading", { name: "Bub Quest", exact: true }),
+    page.getByRole("heading", { name: "Arcade mode", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: /Start/ }).click();
-  await expect(page.getByRole("img", { name: /play field/i })).toBeVisible();
+  await page.getByRole("button", { name: /Play PokéRogue/ }).click();
 
-  // Hold right to sweep up the two orbs on the starting row. With default
-  // tuning (cadence 2) the second orb triggers the question pause.
-  await page.keyboard.down("ArrowRight");
-  await expect(page.getByText(/Pause! Answer to power up/i)).toBeVisible({
-    timeout: 8000,
-  });
-  await page.keyboard.up("ArrowRight");
+  // The real third-party game is embedded.
+  const frame = page.frameLocator('iframe[title="PokéRogue"]');
+  await expect(frame.owner()).toBeVisible();
 
-  // Answer the MCQ: select the first option, check, then keep playing.
+  // Trigger a practice break and answer the MCQ.
+  await page.getByRole("button", { name: /Practise now/i }).click();
+  await expect(page.getByText(/Pause! Answer to power up/i)).toBeVisible();
   await page.locator('input[type="radio"]').first().check();
   await page.getByRole("button", { name: /check answer/i }).click();
-  await page.getByRole("button", { name: /keep playing/i }).click();
+  await page.getByRole("button", { name: /back to game/i }).click();
 
-  // The overlay has closed and the play field is back in view.
+  // The overlay has closed; the game is still embedded.
   await expect(page.getByText(/Pause! Answer to power up/i)).toBeHidden();
-  await expect(page.getByRole("img", { name: /play field/i })).toBeVisible();
+  await expect(frame.owner()).toBeVisible();
 });

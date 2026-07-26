@@ -1,55 +1,41 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { drawGame } from "./gameRenderer";
 import { AppHeader } from "../../components/AppHeader";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
-import { ConfettiBurst } from "../../components/ConfettiBurst";
 import { NotFound } from "../../components/NotFound";
 import { RewardBar } from "../../components/RewardBar";
-import { initGame, gameReducer } from "../../domain/game/gameReducer";
 import { gameQuestions } from "../../domain/game/questions";
 import { localDateIso } from "../../domain/progress/dates";
 import { useProgress } from "../../state/progressContext";
 import { useTrackFromRoute } from "../../state/useTrackFromRoute";
 import { QuestionView } from "../lesson/QuestionView";
 
-import type { Direction } from "../../domain/game/types";
+/**
+ * The live, third-party game embedded by the arcade mode. Framing the public
+ * site (rather than forking it) avoids redistributing the game's code or assets.
+ * PokéRogue is a browser Pokémon roguelite and sends no frame-ancestors header,
+ * so it can be embedded directly.
+ */
+const GAME_URL = "https://pokerogue.net";
 
-/** Maps a keyboard key to a movement direction, or null when unmapped. */
-function keyToDirection(key: string): Direction | null {
-  switch (key) {
-    case "ArrowUp":
-    case "w":
-    case "W": {
-      return "up";
-    }
-    case "ArrowDown":
-    case "s":
-    case "S": {
-      return "down";
-    }
-    case "ArrowLeft":
-    case "a":
-    case "A": {
-      return "left";
-    }
-    case "ArrowRight":
-    case "d":
-    case "D": {
-      return "right";
-    }
-    default: {
-      return null;
-    }
-  }
+/** Seconds of play between automatic question pauses. */
+const QUESTION_INTERVAL_SECONDS = 90;
+
+interface SessionStats {
+  /** Questions answered this session. */
+  answered: number;
+  /** Questions answered correctly this session. */
+  correct: number;
+  /** XP banked this session. */
+  xp: number;
 }
 
 /**
- * The arcade game route. A top-down orb hunt whose loop pauses to ask questions
- * drawn from the current track; correct answers earn in-game points and feed the
- * shared XP/streak/badge system, wrong answers cost a life.
+ * The arcade-game route. Embeds the real PokéRogue in an iframe and overlays a
+ * StudyBub question from the current track at regular intervals (or on demand):
+ * correct answers feed the shared XP/streak/badge system, then play resumes.
  *
  * @returns The rendered game screen.
  */
@@ -57,159 +43,101 @@ export function GameScreen() {
   const { track } = useTrackFromRoute();
   const { dispatch: progressDispatch } = useProgress();
 
-  const [state, dispatch] = useReducer(gameReducer, undefined, () =>
-    initGame(),
-  );
   const pool = useMemo(() => (track ? gameQuestions(track) : []), [track]);
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const [phase, setPhase] = useState<"intro" | "playing">("intro");
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [showQuestion, setShowQuestion] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(QUESTION_INTERVAL_SECONDS);
+  const [stats, setStats] = useState<SessionStats>({
+    answered: 0,
+    correct: 0,
+    xp: 0,
+  });
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [showHint, setShowHint] = useState(true);
+  const hasQuestions = pool.length > 0;
 
-  // Simulation + render loop. Only runs while playing; stops on every other
-  // phase so key handling and the question overlay take over cleanly.
+  // Countdown to the next automatic question pause. Paused while a question is
+  // open or when the track has no questions to ask.
   useEffect(() => {
-    if (state.phase !== "playing") return;
-    let raf = 0;
-    let last = performance.now();
-    const loop = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      const remaining = pool.length - stateRef.current.questionsAsked;
-      dispatch({ type: "TICK", dt, now, questionsRemaining: remaining });
-      const ctx = canvasRef.current?.getContext("2d");
-      if (ctx) drawGame(ctx, stateRef.current, now);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [state.phase, pool.length]);
-
-  // Keyboard controls, attached only while playing so the question overlay's
-  // text inputs keep working normally.
-  useEffect(() => {
-    if (state.phase !== "playing") return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      const dir = keyToDirection(event.key);
-      if (dir) {
-        event.preventDefault();
-        setShowHint(false);
-        dispatch({ type: "SET_INPUT", dir });
-      }
-    };
-    const onKeyUp = (event: KeyboardEvent) => {
-      const dir = keyToDirection(event.key);
-      if (dir) {
-        event.preventDefault();
-        dispatch({ type: "SET_INPUT", dir: null });
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-    };
-  }, [state.phase]);
+    if (phase !== "playing" || showQuestion || !hasQuestions) return;
+    const id = setInterval(() => {
+      setSecondsLeft((remaining) => {
+        if (remaining <= 1) {
+          setShowQuestion(true);
+          return QUESTION_INTERVAL_SECONDS;
+        }
+        return remaining - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase, showQuestion, hasQuestions]);
 
   if (!track) {
     return <NotFound title="Game not found" />;
   }
 
-  const totalOrbs = state.orbs.length;
-  const currentQuestion = pool[state.questionsAsked];
-
-  const backTo = {
-    to: "/subject/$subjectId/track/$trackId",
-    params: { subjectId: track.subjectId, trackId: track.id },
-  };
+  const currentQuestion = pool[questionIndex % pool.length];
 
   const handleAnswered = (correct: boolean, xp: number): void => {
-    dispatch({ type: "ANSWER", correct });
     if (correct) {
       progressDispatch({ type: "ANSWER_CORRECT", xp, today: localDateIso() });
     }
+    setStats((previous) => ({
+      answered: previous.answered + 1,
+      correct: previous.correct + (correct ? 1 : 0),
+      xp: previous.xp + (correct ? xp : 0),
+    }));
+  };
+
+  const handleContinue = (): void => {
+    setQuestionIndex((index) => index + 1);
+    setShowQuestion(false);
   };
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col">
       <AppHeader
         back={{ to: "/subject/$subjectId/track/$trackId", label: "Map" }}
-        title={`Bub Quest · ${track.title}`}
+        title="Arcade"
         right={<RewardBar />}
       />
 
       <GameHud
-        lives={state.lives}
-        score={state.score}
-        collected={state.collected}
-        totalOrbs={totalOrbs}
+        stats={stats}
+        secondsLeft={secondsLeft}
+        hasQuestions={hasQuestions}
+        playing={phase === "playing"}
+        onPause={() => setShowQuestion(true)}
       />
 
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-5 py-6">
-        {state.phase === "intro" ? (
+      <main className="flex flex-1 flex-col items-center px-5 py-4">
+        {phase === "intro" ? (
           <Intro
-            onStart={() => dispatch({ type: "START" })}
-            backTo={backTo}
-            trackTitle={track.title}
+            onStart={() => setPhase("playing")}
             questionCount={pool.length}
+            trackTitle={track.title}
+            subjectId={track.subjectId}
+            trackId={track.id}
           />
         ) : null}
 
-        {state.phase === "playing" || state.phase === "question" ? (
-          <div className="relative">
-            <canvas
-              ref={canvasRef}
-              width={state.cols * state.config.tileSize}
-              height={state.rows * state.config.tileSize}
-              className="rounded-bub shadow-bub-lg ring-1 ring-hairline"
-              aria-label="Bub Quest play field"
-              role="img"
+        {phase === "playing" ? (
+          <div className="relative w-full">
+            <iframe
+              src={GAME_URL}
+              title="PokéRogue"
+              className="h-[70vh] w-full rounded-bub shadow-bub-lg ring-1 ring-hairline"
+              allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
+              referrerPolicy="no-referrer"
             />
-            {showHint && state.phase === "playing" ? (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="rounded-pill bg-ink/80 px-4 py-2 text-sm font-semibold text-white">
-                  Arrow keys / WASD to move
-                </span>
-              </div>
+            {showQuestion && currentQuestion ? (
+              <QuestionOverlay
+                question={currentQuestion}
+                onAnswered={handleAnswered}
+                onContinue={handleContinue}
+              />
             ) : null}
           </div>
-        ) : null}
-
-        {state.phase === "question" && currentQuestion ? (
-          <Card raised className="w-full max-w-xl p-6 md:p-8">
-            <p className="mb-4 text-sm font-semibold text-brand">
-              Pause! Answer to power up
-            </p>
-            <QuestionView
-              question={currentQuestion}
-              onAnswered={handleAnswered}
-              onContinue={() => dispatch({ type: "RESUME" })}
-              continueLabel="Keep playing"
-            />
-          </Card>
-        ) : null}
-
-        {state.phase === "won" ? (
-          <Result
-            emoji="🏆"
-            heading="You win!"
-            state={state}
-            onAgain={() => dispatch({ type: "RESET" })}
-            backTo={backTo}
-            celebrate
-          />
-        ) : null}
-
-        {state.phase === "lost" ? (
-          <Result
-            emoji="💥"
-            heading="Out of lives"
-            state={state}
-            onAgain={() => dispatch({ type: "RESET" })}
-            backTo={backTo}
-          />
         ) : null}
       </main>
     </div>
@@ -217,108 +145,135 @@ export function GameScreen() {
 }
 
 interface GameHudProps {
-  lives: number;
-  score: number;
-  collected: number;
-  totalOrbs: number;
+  stats: SessionStats;
+  secondsLeft: number;
+  hasQuestions: boolean;
+  playing: boolean;
+  onPause: () => void;
 }
 
-function GameHud({ lives, score, collected, totalOrbs }: GameHudProps) {
+function GameHud({
+  stats,
+  secondsLeft,
+  hasQuestions,
+  playing,
+  onPause,
+}: GameHudProps) {
+  if (!playing) return null;
   return (
-    <div className="mx-auto flex w-full max-w-5xl items-center gap-4 px-5 pb-2 text-sm">
-      <span aria-label="Lives" className="font-semibold text-ink">
-        {"❤️".repeat(Math.max(0, lives)) || "—"}
+    <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-3 px-5 pb-2 text-sm">
+      <span className="font-semibold text-ink">
+        ✅ {stats.correct}/{stats.answered}
       </span>
       <span className="text-muted">·</span>
-      <span className="font-semibold text-ink">⭐ {score}</span>
-      <span className="text-muted">·</span>
-      <span className="text-muted">
-        🫧 {collected}/{totalOrbs} orbs
-      </span>
+      <span className="font-semibold text-ink">⭐ {stats.xp} XP</span>
+      {hasQuestions ? (
+        <>
+          <span className="text-muted">·</span>
+          <span className="text-muted">Next question in {secondsLeft}s</span>
+          <button
+            type="button"
+            onClick={onPause}
+            className="rounded-pill bg-brand-soft px-3 py-1 font-semibold text-brand transition hover:bg-brand-deep/15"
+          >
+            ⚡ Practise now
+          </button>
+        </>
+      ) : (
+        <span className="text-muted">No questions for this track yet</span>
+      )}
     </div>
   );
 }
 
 interface IntroProps {
   onStart: () => void;
-  backTo: { to: string; params: Record<string, string> };
-  trackTitle: string;
   questionCount: number;
+  trackTitle: string;
+  subjectId: string;
+  trackId: string;
 }
 
-function Intro({ onStart, backTo, trackTitle, questionCount }: IntroProps) {
+function Intro({
+  onStart,
+  questionCount,
+  trackTitle,
+  subjectId,
+  trackId,
+}: IntroProps) {
   return (
     <Card raised className="w-full max-w-xl p-8 text-center">
       <div className="mb-3 text-5xl" aria-hidden>
-        🫧
+        🎮
       </div>
-      <h1 className="text-2xl text-ink">Bub Quest</h1>
+      <h1 className="text-2xl text-ink">Arcade mode</h1>
       <p className="mt-3 text-muted">
-        Roam the room, scoop up every orb, and dodge the purple wisp. Every
-        couple of orbs the game pauses with a {trackTitle} question — answer
-        right to bank points and XP, wrong and you lose a life. Reach the green
-        portal once every orb is gone to win.
+        Play <strong>PokéRogue</strong> — a browser Pokémon roguelite — in full.
+        Every {QUESTION_INTERVAL_SECONDS} seconds the game is paused with a{" "}
+        {trackTitle} question. Answer right to bank XP and keep your streak
+        going; answer whenever you like with “Practise now”.
       </p>
       <p className="mt-2 text-sm text-muted">
-        Move with arrow keys or WASD. {questionCount} questions ready.
+        {questionCount > 0
+          ? `${questionCount} questions ready.`
+          : "This track has no questions yet — you can still play for fun."}
       </p>
       <div className="mt-6 flex justify-center gap-3">
         <Link
-          to={backTo.to}
-          params={backTo.params}
+          to="/subject/$subjectId/track/$trackId"
+          params={{ subjectId, trackId }}
           className="rounded-pill bg-cream-deep px-6 py-3 font-display font-semibold text-muted transition hover:text-ink"
         >
           ← Back to map
         </Link>
-        <Button onClick={onStart}>Start →</Button>
+        <Button onClick={onStart}>Play PokéRogue →</Button>
       </div>
+      <p className="mt-4 text-xs text-muted">
+        PokéRogue is a third-party open-source game loaded from pokerogue.net.
+      </p>
     </Card>
   );
 }
 
-interface ResultProps {
-  emoji: string;
-  heading: string;
-  state: { score: number; questionsCorrect: number; questionsAsked: number };
-  onAgain: () => void;
-  backTo: { to: string; params: Record<string, string> };
-  celebrate?: boolean;
+interface QuestionOverlayProps {
+  question: import("../../domain/content/types").Question;
+  onAnswered: (correct: boolean, xp: number) => void;
+  onContinue: () => void;
 }
 
-function Result({
-  emoji,
-  heading,
-  state,
-  onAgain,
-  backTo,
-  celebrate,
-}: ResultProps) {
+function QuestionOverlay({
+  question,
+  onAnswered,
+  onContinue,
+}: QuestionOverlayProps) {
   const navigate = useNavigate();
   return (
-    <div className="flex w-full max-w-xl flex-col items-center gap-5 text-center">
-      {celebrate ? <ConfettiBurst /> : null}
-      <div className="flex size-24 animate-bub-pop items-center justify-center rounded-full bg-brand-soft text-5xl shadow-bub">
-        {emoji}
-      </div>
-      <h1 className="text-3xl text-ink">{heading}</h1>
-      <Card raised className="w-full p-6">
-        <div className="font-display text-3xl font-bold text-ink">
-          ⭐ {state.score}
+    <div
+      role="dialog"
+      aria-label="Practice question"
+      aria-modal="true"
+      className="absolute inset-0 flex items-start justify-center overflow-auto rounded-bub bg-ink/60 px-4 py-6"
+    >
+      <Card raised className="w-full max-w-xl p-6 md:p-8">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm font-semibold text-brand">
+            Pause! Answer to power up
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/" })}
+            className="text-sm text-muted transition hover:text-ink"
+          >
+            Quit ✕<span className="sr-only">to home</span>
+          </button>
         </div>
-        <p className="mt-2 text-muted">
-          {state.questionsCorrect}/{state.questionsAsked} questions correct
-        </p>
+        <QuestionView
+          question={question}
+          onAnswered={onAnswered}
+          onContinue={onContinue}
+          continueLabel="Back to game"
+        />
       </Card>
-      <div className="flex gap-3">
-        <Button variant="secondary" onClick={onAgain}>
-          Play again
-        </Button>
-        <Button
-          onClick={() => navigate({ to: backTo.to, params: backTo.params })}
-        >
-          Back to map →
-        </Button>
-      </div>
     </div>
   );
 }
