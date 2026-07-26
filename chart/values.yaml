@@ -1,6 +1,10 @@
 studybub:
   image:
-    repository: ghcr.io/studybub/studybub
+    # Flux reconciles from these defaults (the Helm deploy job is gone). This
+    # must match where CI pushes: ghcr.io/<owner>/<repo>. The previous value
+    # "ghcr.io/studybub/studybub" pointed at a non-existent package, causing
+    # ImagePullBackOff and preventing rollouts.
+    repository: ghcr.io/subtoferalsloth11/studybub
     tag: "latest"
     pullPolicy: Always
 
