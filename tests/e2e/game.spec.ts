@@ -41,17 +41,25 @@ async function answerQuestion(page: Page) {
   }
 }
 
-test("embed Eaglercraft and answer a practice question", async ({ page }) => {
+test("select a game, start a session, and answer a practice question", async ({
+  page,
+}) => {
   await page.goto(GAME);
   await page.waitForLoadState("networkidle");
   await expect(
     page.getByRole("heading", { name: "Arcade mode", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: /Play Eaglercraft/ }).click();
+  // Start button is disabled until a game is selected
+  const startButton = page.getByRole("button", { name: /Start session/ });
+  await expect(startButton).toBeDisabled();
 
-  const frame = page.frameLocator('iframe[title="Eaglercraft"]');
-  await expect(frame.owner()).toBeVisible();
+  await page.getByRole("button", { name: /Rigs of Rods/ }).click();
+  await expect(startButton).not.toBeDisabled();
+  await startButton.click();
+
+  // The playing view shows the selected game's instruction
+  await expect(page.getByText(/Launch Rigs of Rods/)).toBeVisible();
 
   await page.getByRole("button", { name: /Practise now/i }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -84,5 +92,5 @@ test("embed Eaglercraft and answer a practice question", async ({ page }) => {
   }
 
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 10_000 });
-  await expect(frame.owner()).toBeVisible();
+  await expect(page.getByText(/Launch Rigs of Rods/)).toBeVisible();
 });
