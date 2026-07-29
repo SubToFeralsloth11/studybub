@@ -6,6 +6,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { NotFound } from "../../components/NotFound";
 import { RewardBar } from "../../components/RewardBar";
+import { findSubjectForTrack } from "../../content";
 import { gameQuestions } from "../../domain/game/questions";
 import { localDateIso } from "../../domain/progress/dates";
 import { useProgress } from "../../state/progressContext";
@@ -45,6 +46,7 @@ function pickUnused(poolSize: number, recentlyUsed: number[]): number {
 export function GameScreen() {
   const { track } = useTrackFromRoute();
   const { dispatch: progressDispatch } = useProgress();
+  const subject = track ? findSubjectForTrack(track.id) : undefined;
 
   const pool = useMemo(() => (track ? gameQuestions(track) : []), [track]);
   const recentlyUsed = useRef<number[]>([]);
@@ -153,7 +155,11 @@ export function GameScreen() {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col">
       <AppHeader
-        back={{ to: "/subject/$subjectId/track/$trackId", label: "Map" }}
+        back={{
+          to:
+            subject && track ? `/subject/${subject.id}/track/${track.id}` : "/",
+          label: subject ? "Subjects" : "Home",
+        }}
         title="Arcade"
         right={<RewardBar />}
       />
@@ -186,7 +192,7 @@ export function GameScreen() {
               src={GAME_URL}
               title={GAME_NAME}
               className="h-[70vh] w-full rounded-bub shadow-bub-lg ring-1 ring-hairline"
-              allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
+              allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write; pointer-lock"
             />
             {showQuestion && currentQuestion ? (
               <QuestionOverlay
