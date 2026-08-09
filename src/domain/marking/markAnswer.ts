@@ -15,6 +15,7 @@ import { markExpression } from "./markExpression";
 import { markFillInTheBlank } from "./markFillInTheBlank";
 import { markMatching } from "./markMatching";
 import { markMcq } from "./markMcq";
+import { markMultiSelect } from "./markMultiSelect";
 import { markNumeric } from "./markNumeric";
 import { markShortTextAi } from "./markShortTextAi";
 
@@ -36,30 +37,34 @@ export interface MarkAnswerOptions {
  * Marks an answer against its question, dispatching by question type.
  *
  * @param question - The question being answered.
- * @param input - The learner's answer: an option id for MCQ, a JSON mapping for
- *   matching, or raw text for other question types.
+ * @param input - The learner's answer: an option id for MCQ, an array of option
+ *   ids for multiSelect, a JSON mapping for matching, or raw text for other
+ *   question types.
  * @param options - Optional config (AI config for short-text, injected fetch).
  * @returns A promise resolving to the {@link MarkResult} for the answer.
  */
 export async function markAnswer(
   question: Question,
-  input: string,
+  input: string | string[],
   options?: MarkAnswerOptions,
 ): Promise<MarkResult> {
   switch (question.type) {
     case "mcq": {
-      return markMcq(question, input);
+      return markMcq(question, input as string);
+    }
+    case "multiSelect": {
+      return markMultiSelect(question, input as string[]);
     }
     case "numeric": {
-      return markNumeric(question, input);
+      return markNumeric(question, input as string);
     }
     case "expression": {
-      return markExpression(question, input);
+      return markExpression(question, input as string);
     }
     case "shortText": {
       return markShortTextAi(
         question,
-        input,
+        input as string,
         options?.aiConfig,
         options?.fetch ??
           (globalThis.fetch?.bind(globalThis) as typeof globalThis.fetch),
@@ -67,10 +72,10 @@ export async function markAnswer(
       );
     }
     case "fillInTheBlank": {
-      return markFillInTheBlank(question, input);
+      return markFillInTheBlank(question, input as string);
     }
     case "matching": {
-      return markMatching(question, input);
+      return markMatching(question, input as string);
     }
   }
 }

@@ -95,6 +95,22 @@ function matchingQuestion(): Question {
   };
 }
 
+function multiSelectQuestion(): Question {
+  return {
+    id: "q7",
+    type: "multiSelect",
+    prompt: [{ kind: "text", text: "Which are elements? (Select all that apply.)" }],
+    explanation: [{ kind: "text", text: "Carbon and gold." }],
+    xp: 10,
+    options: [
+      { id: "a", label: [{ kind: "text", text: "Water" }] },
+      { id: "b", label: [{ kind: "text", text: "Carbon" }] },
+      { id: "c", label: [{ kind: "text", text: "Gold" }] },
+    ],
+    correctOptionIds: ["b", "c"],
+  };
+}
+
 // --- Tests ---
 
 describe("markAnswer — MCQ", () => {
@@ -186,6 +202,23 @@ describe("markAnswer — matching", () => {
   it("marks a wrong pair mapping as incorrect", async () => {
     const mapping = JSON.stringify({ p1: "p2", p2: "p1" });
     const result = await markAnswer(matchingQuestion(), mapping);
+    expect(result.status).toBe("incorrect");
+  });
+});
+
+describe("markAnswer — multiSelect", () => {
+  it("dispatches an exact-set selection as correct", async () => {
+    const result = await markAnswer(multiSelectQuestion(), ["b", "c"]);
+    expect(result.status).toBe("correct");
+  });
+
+  it("dispatches an incomplete selection as incorrect", async () => {
+    const result = await markAnswer(multiSelectQuestion(), ["b"]);
+    expect(result.status).toBe("incorrect");
+  });
+
+  it("dispatches a selection with an extra wrong option as incorrect", async () => {
+    const result = await markAnswer(multiSelectQuestion(), ["b", "c", "a"]);
     expect(result.status).toBe("incorrect");
   });
 });

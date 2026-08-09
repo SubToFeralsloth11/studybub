@@ -119,6 +119,40 @@ function validateQuestion(
       }
       break;
     }
+    case "multiSelect": {
+      if (question.options.length < 2 || question.options.length > 5) {
+        issues.push(
+          `${where}: multiSelect "${question.id}" must have 2-5 options (has ${question.options.length}).`,
+        );
+      }
+      const optionIds = question.options.map((option) => option.id);
+      if (new Set(optionIds).size !== optionIds.length) {
+        issues.push(
+          `${where}: multiSelect "${question.id}" has duplicate option ids.`,
+        );
+      }
+      if (question.correctOptionIds.length < 2) {
+        issues.push(
+          `${where}: multiSelect "${question.id}" must have at least 2 correct option ids (has ${question.correctOptionIds.length}).`,
+        );
+      }
+      for (const correctId of question.correctOptionIds) {
+        if (!optionIds.includes(correctId)) {
+          issues.push(
+            `${where}: multiSelect "${question.id}" correctOptionIds entry "${correctId}" matches no option.`,
+          );
+        }
+      }
+      if (
+        question.correctOptionIds.length >= optionIds.length &&
+        optionIds.length > 0
+      ) {
+        issues.push(
+          `${where}: multiSelect "${question.id}" marks every option correct - at least one option must be incorrect.`,
+        );
+      }
+      break;
+    }
     case "numeric": {
       const meaningful = question.accepted.filter(
         (value) => value.trim() !== "",

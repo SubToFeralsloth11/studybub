@@ -882,3 +882,105 @@ describe("validateContent - refersTo learn-card link", () => {
     );
   });
 });
+
+// --- T006: multiSelect question validation ---
+
+function multiSelectQuestion(overrides?: Partial<Question>): Question {
+  return {
+    id: "ms1",
+    type: "multiSelect",
+    prompt: [{ kind: "text", text: "Which are elements? (Select all that apply.)" }],
+    explanation: [{ kind: "text", text: "Carbon and gold are elements." }],
+    xp: 10,
+    options: [
+      { id: "a", label: [{ kind: "text", text: "Water" }] },
+      { id: "b", label: [{ kind: "text", text: "Carbon" }] },
+      { id: "c", label: [{ kind: "text", text: "Gold" }] },
+      { id: "d", label: [{ kind: "text", text: "Air" }] },
+    ],
+    correctOptionIds: ["b", "c"],
+    ...overrides,
+  };
+}
+
+function contentWithPractice(question: Question): AppContent {
+  const content = validContent();
+  content.tracks[0].lessons[0].practice = [question];
+  return content;
+}
+
+describe("validateContent - multiSelect question validation", () => {
+  it("accepts a well-formed multiSelect question", () => {
+    expect(validateContent(contentWithPractice(multiSelectQuestion()))).toEqual(
+      [],
+    );
+  });
+
+  it("rejects a multiSelect question with fewer than 2 options", () => {
+    const question = multiSelectQuestion({
+      options: [{ id: "b", label: [{ kind: "text", text: "Carbon" }] }],
+      correctOptionIds: ["b"],
+    }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /must have 2-5 options/,
+    );
+  });
+
+  it("rejects a multiSelect question with more than 5 options", () => {
+    const question = multiSelectQuestion({
+      options: Array.from({ length: 6 }, (_, i) => ({
+        id: `o${i}`,
+        label: [{ kind: "text", text: `Option ${i}` }],
+      })),
+      correctOptionIds: ["o0", "o1"],
+    }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /must have 2-5 options/,
+    );
+  });
+
+  it("rejects a multiSelect question with duplicate option ids", () => {
+    const question = multiSelectQuestion({
+      options: [
+        { id: "a", label: [{ kind: "text", text: "Water" }] },
+        { id: "a", label: [{ kind: "text", text: "Air" }] },
+      ],
+      correctOptionIds: ["a"],
+    }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /duplicate option ids/,
+    );
+  });
+
+  it("rejects a multiSelect question with fewer than 2 correct option ids", () => {
+    const question = multiSelectQuestion({ correctOptionIds: ["b"] }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /at least 2 correct option ids/,
+    );
+  });
+
+  it("rejects a multiSelect question whose correct id matches no option", () => {
+    const question = multiSelectQuestion({
+      correctOptionIds: ["b", "zzz"],
+    }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /correctOptionIds.*"zzz".*matches no option|correct option id.*"zzz".*matches no option/i,
+    );
+  });
+
+  it("rejects a multiSelect question where every option is correct", () => {
+    const question = multiSelectQuestion({
+      correctOptionIds: ["a", "b", "c", "d"],
+    }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /at least one option.*incorrect|every option is correct/i,
+    );
+  });
+
+  it("rejects a multiSelect question with an empty explanation", () => {
+    const question = multiSelectQuestion({ explanation: [] }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /empty explanation/,
+    );
+  });
+});

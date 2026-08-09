@@ -4,7 +4,7 @@
  * @module domain/content/shuffleOptions
  */
 
-import type { MatchingPair, McqQuestion } from "./types";
+import type { MatchingPair, McqQuestion, MultiSelectQuestion } from "./types";
 
 /**
  * Performs an in-place Fisher-Yates shuffle on an array.
@@ -45,10 +45,42 @@ export function shuffleMcqOptions(
   question: McqQuestion,
   random?: () => number,
 ): McqQuestion {
+  return shuffleOptionList(question, random);
+}
+
+/**
+ * Shuffles a copy of a question's option list while leaving every other field
+ * (including any option-id set) untouched.
+ *
+ * @param question - The original question whose options are to be shuffled.
+ * @param random - Optional random function for deterministic testing.
+ * @returns A new question of the same type with options in random order.
+ */
+export function shuffleOptionList<T extends { options: unknown[] }>(
+  question: T,
+  random?: () => number,
+): T {
   return {
     ...question,
     options: fisherYatesShuffle([...question.options], random),
   };
+}
+
+/**
+ * Produces a copy of a multiselect question with its options shuffled.
+ *
+ * `correctOptionIds` is preserved untouched, so marking still works regardless
+ * of the new display order. The original question is not mutated.
+ *
+ * @param question - The original multiselect question.
+ * @param random - Optional random function for deterministic testing.
+ * @returns A new multiselect question with options in random order.
+ */
+export function shuffleMultiSelectOptions(
+  question: MultiSelectQuestion,
+  random?: () => number,
+): MultiSelectQuestion {
+  return shuffleOptionList(question, random);
 }
 
 /**
