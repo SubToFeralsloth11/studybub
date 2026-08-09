@@ -152,7 +152,7 @@ function validateQuestion(
         }
       }
       if (
-        question.correctOptionIds.length >= optionIds.length &&
+        new Set(question.correctOptionIds).size >= optionIds.length &&
         optionIds.length > 0
       ) {
         issues.push(

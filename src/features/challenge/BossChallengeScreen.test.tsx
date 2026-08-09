@@ -255,4 +255,56 @@ describe("BossChallengeScreen - multiSelect", () => {
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
+
+  it("presents multiSelect options in authored order (no shuffle)", async () => {
+    seedComplete();
+    const user = userEvent.setup();
+    await renderApp(<BossChallengeScreen />, {
+      route: "/challenge/time",
+      path: "challenge/$trackId",
+      content: multiSelectContent,
+    });
+    await user.click(screen.getByRole("button", { name: /start challenge/i }));
+
+    const values = screen
+      .getAllByRole("checkbox")
+      .map((checkbox) => checkbox.getAttribute("value"));
+    expect(values).toEqual(["a", "b", "c"]);
+  });
+
+  it("resets the selection between consecutive multiSelect questions", async () => {
+    seedComplete();
+    const user = userEvent.setup();
+    await renderApp(<BossChallengeScreen />, {
+      route: "/challenge/time",
+      path: "challenge/$trackId",
+      content: {
+        ...content,
+        tracks: [
+          {
+            ...track,
+            challenge: {
+              id: "time-boss",
+              title: "Boss challenge: Time review",
+              sourceRef: "P",
+              questions: [multiSelect("ms1"), multiSelect("ms2")],
+              bonusXp: 80,
+              passBadgeId: "boss-time",
+            },
+          },
+        ],
+      },
+    });
+    await user.click(screen.getByRole("button", { name: /start challenge/i }));
+
+    await user.click(screen.getByRole("checkbox", { name: /alpha/i }));
+    await user.click(screen.getByRole("checkbox", { name: /beta/i }));
+    await user.click(screen.getByRole("button", { name: /submit answer/i }));
+
+    const secondQuestion = screen.getAllByRole("checkbox");
+    expect(secondQuestion).toHaveLength(3);
+    for (const checkbox of secondQuestion) {
+      expect(checkbox).not.toBeChecked();
+    }
+  });
 });

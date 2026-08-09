@@ -999,4 +999,15 @@ describe("validateContent - multiSelect question validation", () => {
       /empty explanation/,
     );
   });
+
+  it("does not report every-option-correct for duplicate correct ids", () => {
+    const question = multiSelectQuestion({
+      correctOptionIds: ["a", "b", "c", "c"],
+    }) as Question;
+    const issues = validateContent(contentWithPractice(question)).join("\n");
+    expect(issues).toMatch(/duplicate correct option ids/);
+    expect(issues).not.toMatch(
+      /every option is correct|at least one option.*incorrect/,
+    );
+  });
 });

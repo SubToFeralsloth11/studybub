@@ -115,7 +115,7 @@ export function OptionCard({
 }: Readonly<OptionCardProps>) {
   return (
     <label
-      className={`flex cursor-pointer items-center gap-3 rounded-bub border-2 bg-card px-5 py-4 text-lg transition ${cardClasses(selected, revealed, revealState)} ${revealed ? "cursor-default" : ""}`}
+      className={`flex items-center gap-3 rounded-bub border-2 bg-card px-5 py-4 text-lg transition ${cardClasses(selected, revealed, revealState)} ${revealed ? "cursor-default" : "cursor-pointer"}`}
     >
       {control}
       <span className="flex-1">
