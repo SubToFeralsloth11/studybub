@@ -136,6 +136,14 @@ function validateQuestion(
           `${where}: multiSelect "${question.id}" must have at least 2 correct option ids (has ${question.correctOptionIds.length}).`,
         );
       }
+      if (
+        new Set(question.correctOptionIds).size !==
+        question.correctOptionIds.length
+      ) {
+        issues.push(
+          `${where}: multiSelect "${question.id}" has duplicate correct option ids.`,
+        );
+      }
       for (const correctId of question.correctOptionIds) {
         if (!optionIds.includes(correctId)) {
           issues.push(

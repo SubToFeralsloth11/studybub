@@ -966,6 +966,15 @@ describe("validateContent - multiSelect question validation", () => {
     );
   });
 
+  it("rejects a multiSelect question with duplicate correct option ids", () => {
+    const question = multiSelectQuestion({
+      correctOptionIds: ["b", "b"],
+    }) as Question;
+    expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
+      /duplicate correct option ids/,
+    );
+  });
+
   it("rejects a multiSelect question whose correct id matches no option", () => {
     const question = multiSelectQuestion({
       correctOptionIds: ["b", "zzz"],

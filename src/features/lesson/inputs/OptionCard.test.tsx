@@ -58,8 +58,8 @@ describe("OptionCard", () => {
   it("shows the correct-missed reveal state with a missed cue", () => {
     renderCard({ revealed: true, revealState: "correct-missed" });
     const label = screen.getByText("Carbon").closest("label")!;
-    expect(label.className).toContain("ring-success");
-    expect(label.className).toContain("ring-dashed");
+    expect(label.className).toContain("border-success");
+    expect(label.className).toContain("border-dashed");
     expect(screen.getByText("missed")).toBeInTheDocument();
   });
 

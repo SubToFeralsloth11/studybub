@@ -206,6 +206,24 @@ describe("QuestionView — multiselect flow", () => {
     expect(screen.getByRole("checkbox", { name: /gold/i })).toBeChecked();
   });
 
+  it("deselects a tapped option while keeping the other selections", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    await user.click(screen.getByRole("checkbox", { name: /gold/i }));
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+
+    expect(screen.getByRole("checkbox", { name: /carbon/i })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /gold/i })).toBeChecked();
+  });
+
   it("keeps the Check button disabled until at least one option is selected", async () => {
     const user = userEvent.setup();
     await renderApp(

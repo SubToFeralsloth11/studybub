@@ -154,4 +154,18 @@ describe("authored content - multiselect", () => {
     // The shipped content validates with the multiSelect question in place.
     expect(validateContent(appContent)).toEqual([]);
   });
+
+  it("ships the metals question as a two-answer multiSelect question", () => {
+    const chemistry = findTrack("chemistry")!;
+    const all = chemistry.lessons.flatMap((lesson) => [
+      ...lesson.practice,
+      ...lesson.mastery,
+    ]);
+    const asP5 = all.find((q) => q.id === "as-p5");
+    expect(asP5).toBeDefined();
+    expect(asP5!.type).toBe("multiSelect");
+    const multi = asP5 as MultiSelectQuestion;
+    expect(multi.correctOptionIds).toEqual(["a", "c"]);
+    expect(validateContent(appContent)).toEqual([]);
+  });
 });

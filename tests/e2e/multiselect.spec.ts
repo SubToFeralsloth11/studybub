@@ -60,4 +60,6 @@ test("a partial multiselect selection is marked incorrect", async ({
   await page.getByRole("button", { name: /check answer/i }).click();
 
   await expect(page.getByRole("status")).toContainText(/not quite/i);
+  // The missed correct option (Gold) is surfaced with the missed cue.
+  await expect(page.getByText("missed")).toBeVisible();
 });

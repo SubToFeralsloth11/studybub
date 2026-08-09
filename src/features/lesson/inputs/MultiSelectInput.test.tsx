@@ -107,8 +107,8 @@ describe("MultiSelectInput - reveal feedback", () => {
     );
     const carbon = screen.getByRole("checkbox", { name: /carbon/i });
     const label = carbon.closest("label")!;
-    expect(label.className).toContain("ring-success");
-    expect(label.className).toContain("ring-dashed");
+    expect(label.className).toContain("border-success");
+    expect(label.className).toContain("border-dashed");
     expect(screen.getAllByText("missed").length).toBeGreaterThan(0);
   });
 

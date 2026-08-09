@@ -528,7 +528,7 @@ const atomsSymbolsLesson: Lesson = {
     },
     {
       id: "as-p5",
-      type: "mcq",
+      type: "multiSelect",
       prompt: [
         t("Select TWO properties that distinguish metals from non-metals."),
       ],
@@ -545,7 +545,7 @@ const atomsSymbolsLesson: Lesson = {
         { id: "d", label: [t("Brittle solid")] },
         { id: "e", label: [t("Poor conductor of heat")] },
       ],
-      correctOptionId: "c",
+      correctOptionIds: ["a", "c"],
     },
     {
       id: "as-p6",
