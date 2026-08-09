@@ -194,6 +194,36 @@ interface McqOption {
 
 **Marking**: Selected option id must equal `correctOptionId`.
 
+### MultiSelectQuestion
+
+```typescript
+interface MultiSelectQuestion {
+  type: "multiSelect";
+  id: string;
+  prompt: RichBlock[];
+  figure?: Figure | null;
+  explanation: RichBlock[];
+  xp: number;
+  options: McqOption[]; // 2–5 options, unique ids
+  correctOptionIds: string[]; // 2 to options.length-1 ids, each matching an option id
+}
+```
+
+**Constraints**:
+
+- `options` must have 2–5 entries with unique ids.
+- `correctOptionIds` must have at least 2 entries, each matching one
+  `options[].id`, and must leave at least one option incorrect (a genuine
+  "select all that apply" question).
+- `explanation` must be non-empty (common to every question type).
+
+**Prompt**: The prompt SHOULD instruct the learner to select all that apply,
+e.g. "Which of the following are elements? (Select all that apply.)".
+
+**Marking**: The answer is correct only when the set of selected option ids
+exactly equals `correctOptionIds`. All-or-nothing — no partial credit is
+awarded.
+
 ### NumericQuestion
 
 ```typescript
