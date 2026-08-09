@@ -16,6 +16,25 @@ import { QuestionView } from "./QuestionView";
 import { setMockAiConfig, clearMockProgress } from "../../test/mocks";
 import { renderApp } from "../../test/renderApp";
 
+// Mock the shuffle helpers so multiselect option display order is
+// deterministic: the displayed order becomes the reversed authored order.
+const reversedMultiSelect = vi.hoisted(() =>
+  vi.fn((question: MultiSelectQuestion) => ({
+    ...question,
+    options: question.options.toReversed(),
+  })),
+);
+vi.mock("../../domain/content/shuffleOptions", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("../../domain/content/shuffleOptions")
+    >();
+  return {
+    ...actual,
+    shuffleMultiSelectOptions: reversedMultiSelect,
+  };
+});
+
 import type {
   MultiSelectQuestion,
   ShortTextQuestion,
@@ -130,6 +149,15 @@ function multiSelectQ(): MultiSelectQuestion {
       { id: "d", label: [{ kind: "text", text: "Air" }] },
     ],
     correctOptionIds: ["b", "c"],
+  };
+}
+
+// The mocked shuffle reverses the option order so the displayed question keeps
+// the same correct ids but a distinct, deterministic display order.
+function shuffledCopy(question: MultiSelectQuestion): MultiSelectQuestion {
+  return {
+    ...question,
+    options: question.options.toReversed(),
   };
 }
 
@@ -251,5 +279,54 @@ describe("QuestionView — multiselect flow", () => {
     await waitFor(() => {
       expect(screen.getByRole("checkbox", { name: /carbon/i })).toBeDisabled();
     });
+  });
+});
+
+describe("QuestionView — multiselect shuffle", () => {
+  const onAnswered = vi.fn();
+  const onContinue = vi.fn();
+
+  beforeEach(() => {
+    onAnswered.mockClear();
+    onContinue.mockClear();
+    clearMockProgress();
+    setMockAiConfig(null);
+    reversedMultiSelect.mockImplementation((question: MultiSelectQuestion) =>
+      shuffledCopy(question),
+    );
+  });
+
+  it("shuffles the displayed multiSelect options before presenting", async () => {
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    expect(reversedMultiSelect).toHaveBeenCalled();
+  });
+
+  it("keeps the correct option ids intact through the shuffle", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    // The displayed order is reversed (Air, Gold, Carbon, Water) but the
+    // correct set is unchanged, so selecting Carbon and Gold still passes.
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    await user.click(screen.getByRole("checkbox", { name: /gold/i }));
+    await user.click(screen.getByRole("button", { name: /check answer/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(/correct/i);
+    });
+    expect(onAnswered).toHaveBeenCalledWith(true, 15);
   });
 });

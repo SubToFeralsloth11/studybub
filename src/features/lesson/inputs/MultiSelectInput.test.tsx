@@ -79,3 +79,65 @@ describe("MultiSelectInput", () => {
     }
   });
 });
+
+describe("MultiSelectInput - reveal feedback", () => {
+  it("shows a correct-selected cue for a correctly selected option", () => {
+    render(
+      <MultiSelectInput
+        question={question}
+        selectedIds={["b"]}
+        onToggle={vi.fn()}
+        revealed
+      />,
+    );
+    const carbon = screen.getByRole("checkbox", { name: /carbon/i });
+    const label = carbon.closest("label")!;
+    expect(label.className).toContain("ring-success");
+    expect(screen.getByLabelText(/correct/i)).toBeInTheDocument();
+  });
+
+  it("shows a missed cue for a correct-but-unselected option", () => {
+    render(
+      <MultiSelectInput
+        question={question}
+        selectedIds={[]}
+        onToggle={vi.fn()}
+        revealed
+      />,
+    );
+    const carbon = screen.getByRole("checkbox", { name: /carbon/i });
+    const label = carbon.closest("label")!;
+    expect(label.className).toContain("ring-success");
+    expect(label.className).toContain("ring-dashed");
+    expect(screen.getAllByText("missed").length).toBeGreaterThan(0);
+  });
+
+  it("strikes through a wrongly selected option", () => {
+    render(
+      <MultiSelectInput
+        question={question}
+        selectedIds={["a"]}
+        onToggle={vi.fn()}
+        revealed
+      />,
+    );
+    const water = screen.getByRole("checkbox", { name: /water/i });
+    const label = water.closest("label")!;
+    expect(label.className).toContain("ring-warn");
+    expect(label.className).toContain("line-through");
+  });
+
+  it("dims an unselected incorrect option", () => {
+    render(
+      <MultiSelectInput
+        question={question}
+        selectedIds={["b"]}
+        onToggle={vi.fn()}
+        revealed
+      />,
+    );
+    const water = screen.getByRole("checkbox", { name: /water/i });
+    const label = water.closest("label")!;
+    expect(label.className).toContain("opacity-60");
+  });
+});
