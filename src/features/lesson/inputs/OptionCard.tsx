@@ -69,7 +69,7 @@ function revealCue(revealState?: OptionRevealState): ReactNode {
   switch (revealState) {
     case "correct": {
       return (
-        <span aria-label="Correct" className="text-success">
+        <span role="img" aria-label="Correct" className="text-success">
           ✓
         </span>
       );
@@ -77,6 +77,7 @@ function revealCue(revealState?: OptionRevealState): ReactNode {
     case "correct-missed": {
       return (
         <span
+          role="img"
           aria-label="Missed"
           className="rounded-pill bg-success px-2 py-0.5 text-sm font-semibold text-white"
         >
@@ -86,7 +87,7 @@ function revealCue(revealState?: OptionRevealState): ReactNode {
     }
     case "wrong-selected": {
       return (
-        <span aria-label="Wrong" className="text-warn">
+        <span role="img" aria-label="Wrong" className="text-warn">
           ✕
         </span>
       );

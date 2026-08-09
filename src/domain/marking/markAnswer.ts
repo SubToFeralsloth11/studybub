@@ -53,7 +53,12 @@ export async function markAnswer(
       return markMcq(question, input as string);
     }
     case "multiSelect": {
-      return markMultiSelect(question, input as string[]);
+      // multiSelect answers must arrive as an option-id array; a stray string
+      // would otherwise be iterated character-by-character and mis-marked.
+      if (!Array.isArray(input)) {
+        return { status: "incorrect" };
+      }
+      return markMultiSelect(question, input);
     }
     case "numeric": {
       return markNumeric(question, input as string);

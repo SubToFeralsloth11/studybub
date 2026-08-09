@@ -223,4 +223,10 @@ describe("markAnswer — multiSelect", () => {
     const result = await markAnswer(multiSelectQuestion(), ["b", "c", "a"]);
     expect(result.status).toBe("incorrect");
   });
+
+  it("never iterates a stray string input as option ids", async () => {
+    // A string must not be silently treated as a list of single-character ids.
+    const result = await markAnswer(multiSelectQuestion(), "bc");
+    expect(result.status).toBe("incorrect");
+  });
 });

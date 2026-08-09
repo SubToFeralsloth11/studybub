@@ -168,4 +168,18 @@ describe("authored content - multiselect", () => {
     expect(multi.correctOptionIds).toEqual(["a", "c"]);
     expect(validateContent(appContent)).toEqual([]);
   });
+
+  it("ships the zero-index question as a three-answer multiSelect question", () => {
+    const algebra = findTrack("algebra")!;
+    const all = algebra.lessons.flatMap((lesson) => [
+      ...lesson.practice,
+      ...lesson.mastery,
+    ]);
+    const q5kM3 = all.find((q) => q.id === "5k-m3");
+    expect(q5kM3).toBeDefined();
+    expect(q5kM3!.type).toBe("multiSelect");
+    const multi = q5kM3 as MultiSelectQuestion;
+    expect(multi.correctOptionIds).toEqual(["a", "b", "d"]);
+    expect(validateContent(appContent)).toEqual([]);
+  });
 });
