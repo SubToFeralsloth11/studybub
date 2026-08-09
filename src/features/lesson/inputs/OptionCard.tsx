@@ -40,23 +40,23 @@ function cardClasses(
   if (revealed) {
     switch (revealState) {
       case "correct": {
-        return "border-transparent ring-success bg-success-soft text-ink";
+        return "border-transparent ring-2 ring-success bg-success-soft text-ink";
       }
       case "correct-missed": {
-        return "border-success border-dashed ring-0 bg-success-soft text-ink";
+        return "border-success border-dashed bg-success-soft text-ink";
       }
       case "wrong-selected": {
-        return "border-transparent ring-warn bg-warn-soft text-ink line-through decoration-warn/60";
+        return "border-transparent ring-2 ring-warn bg-warn-soft text-ink line-through decoration-warn/60";
       }
       default: {
-        return "border-transparent ring-hairline opacity-60";
+        return "border-transparent ring-2 ring-hairline opacity-60";
       }
     }
   }
   if (selected) {
-    return "border-transparent ring-brand bg-brand-soft text-ink";
+    return "border-transparent ring-2 ring-brand bg-brand-soft text-ink";
   }
-  return "border-transparent ring-hairline hover:ring-brand/40";
+  return "border-transparent ring-2 ring-hairline hover:ring-brand/40";
 }
 
 /**
@@ -114,7 +114,7 @@ export function OptionCard({
 }: Readonly<OptionCardProps>) {
   return (
     <label
-      className={`flex cursor-pointer items-center gap-3 rounded-bub border-2 bg-card px-5 py-4 text-lg ring-2 transition ${cardClasses(selected, revealed, revealState)} ${revealed ? "cursor-default" : ""}`}
+      className={`flex cursor-pointer items-center gap-3 rounded-bub border-2 bg-card px-5 py-4 text-lg transition ${cardClasses(selected, revealed, revealState)} ${revealed ? "cursor-default" : ""}`}
     >
       {control}
       <span className="flex-1">

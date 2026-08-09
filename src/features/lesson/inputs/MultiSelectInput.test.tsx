@@ -109,6 +109,9 @@ describe("MultiSelectInput - reveal feedback", () => {
     const label = carbon.closest("label")!;
     expect(label.className).toContain("border-success");
     expect(label.className).toContain("border-dashed");
+    // The missed state must not carry a solid ring (ring-2 would render a
+    // spurious ink ring around the dashed border).
+    expect(label.className).not.toMatch(/\bring(?:-\w+)?\b/);
     expect(screen.getAllByText("missed").length).toBeGreaterThan(0);
   });
 
