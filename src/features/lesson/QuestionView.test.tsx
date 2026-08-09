@@ -16,7 +16,10 @@ import { QuestionView } from "./QuestionView";
 import { setMockAiConfig, clearMockProgress } from "../../test/mocks";
 import { renderApp } from "../../test/renderApp";
 
-import type { ShortTextQuestion } from "../../domain/content/types";
+import type {
+  MultiSelectQuestion,
+  ShortTextQuestion,
+} from "../../domain/content/types";
 import type { AiConfig } from "../../domain/persistence/aiConfig";
 
 /** A short-text question fixture. */
@@ -107,5 +110,146 @@ describe("QuestionView — short-text AI marking", () => {
       name: /judging your answer/i,
     });
     expect(judgingButton).toBeDisabled();
+  });
+});
+
+/** A multiselect question fixture. */
+function multiSelectQ(): MultiSelectQuestion {
+  return {
+    id: "ms1",
+    type: "multiSelect",
+    prompt: [
+      { kind: "text", text: "Which are elements? (Select all that apply.)" },
+    ],
+    explanation: [{ kind: "text", text: "Carbon and gold are elements." }],
+    xp: 15,
+    options: [
+      { id: "a", label: [{ kind: "text", text: "Water" }] },
+      { id: "b", label: [{ kind: "text", text: "Carbon" }] },
+      { id: "c", label: [{ kind: "text", text: "Gold" }] },
+      { id: "d", label: [{ kind: "text", text: "Air" }] },
+    ],
+    correctOptionIds: ["b", "c"],
+  };
+}
+
+describe("QuestionView — multiselect flow", () => {
+  const onAnswered = vi.fn();
+  const onContinue = vi.fn();
+
+  beforeEach(() => {
+    onAnswered.mockClear();
+    onContinue.mockClear();
+    clearMockProgress();
+    setMockAiConfig(null);
+  });
+
+  it("lets the learner select multiple options independently", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    await user.click(screen.getByRole("checkbox", { name: /gold/i }));
+
+    expect(screen.getByRole("checkbox", { name: /carbon/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /gold/i })).toBeChecked();
+  });
+
+  it("keeps an earlier selection when toggling another option", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    await user.click(screen.getByRole("checkbox", { name: /gold/i }));
+
+    expect(screen.getByRole("checkbox", { name: /carbon/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /gold/i })).toBeChecked();
+  });
+
+  it("keeps the Check button disabled until at least one option is selected", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    const checkButton = screen.getByRole("button", { name: /check answer/i });
+    expect(checkButton).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    expect(checkButton).toBeEnabled();
+  });
+
+  it("marks a correct set as correct with full XP", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    await user.click(screen.getByRole("checkbox", { name: /gold/i }));
+    await user.click(screen.getByRole("button", { name: /check answer/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(/correct/i);
+    });
+    expect(onAnswered).toHaveBeenCalledWith(true, 15);
+    expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();
+  });
+
+  it("marks a partial selection as incorrect", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    await user.click(screen.getByRole("button", { name: /check answer/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(/not quite/i);
+    });
+    expect(onAnswered).toHaveBeenCalledWith(false, 15);
+  });
+
+  it("disables the checkboxes once the answer is checked", async () => {
+    const user = userEvent.setup();
+    await renderApp(
+      <QuestionView
+        question={multiSelectQ()}
+        onAnswered={onAnswered}
+        onContinue={onContinue}
+      />,
+    );
+
+    await user.click(screen.getByRole("checkbox", { name: /carbon/i }));
+    await user.click(screen.getByRole("button", { name: /check answer/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("checkbox", { name: /carbon/i })).toBeDisabled();
+    });
   });
 });

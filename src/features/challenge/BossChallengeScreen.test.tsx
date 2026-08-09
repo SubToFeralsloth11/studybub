@@ -10,6 +10,7 @@ import { renderApp } from "../../test/renderApp";
 import type {
   AppContent,
   McqQuestion,
+  MultiSelectQuestion,
   Track,
 } from "../../domain/content/types";
 
@@ -28,6 +29,24 @@ function mcq(id: string, correct: string): McqQuestion {
       { id: "b", label: [{ kind: "text", text: "B" }] },
     ],
     correctOptionId: correct,
+  };
+}
+
+function multiSelect(id: string): MultiSelectQuestion {
+  return {
+    id,
+    type: "multiSelect",
+    prompt: [
+      { kind: "text", text: `Which of ${id} apply? (Select all that apply.)` },
+    ],
+    explanation: [{ kind: "text", text: "e" }],
+    xp: 15,
+    options: [
+      { id: "a", label: [{ kind: "text", text: "Alpha" }] },
+      { id: "b", label: [{ kind: "text", text: "Beta" }] },
+      { id: "c", label: [{ kind: "text", text: "Gamma" }] },
+    ],
+    correctOptionIds: ["a", "c"],
   };
 }
 
@@ -137,5 +156,103 @@ describe("BossChallengeScreen", () => {
     expect(
       screen.queryByRole("button", { name: /reference/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("BossChallengeScreen - multiSelect", () => {
+  const multiSelectTrack: Track = {
+    ...track,
+    challenge: {
+      id: "time-boss",
+      title: "Boss challenge: Time review",
+      sourceRef: "P",
+      questions: [multiSelect("ms1")],
+      bonusXp: 80,
+      passBadgeId: "boss-time",
+    },
+  };
+
+  const multiSelectContent: AppContent = {
+    ...content,
+    tracks: [multiSelectTrack],
+  };
+
+  function seedComplete() {
+    setMockProgress({
+      ...defaultState(),
+      lessons: { t1: { completed: true, bestAccuracy: 1 } },
+    });
+  }
+
+  beforeEach(() => {
+    clearMockProgress();
+  });
+
+  it("renders checkboxes that toggle independently in the challenge", async () => {
+    seedComplete();
+    const user = userEvent.setup();
+    await renderApp(<BossChallengeScreen />, {
+      route: "/challenge/time",
+      path: "challenge/$trackId",
+      content: multiSelectContent,
+    });
+    await user.click(screen.getByRole("button", { name: /start challenge/i }));
+
+    const alpha = screen.getByRole("checkbox", { name: /alpha/i });
+    const beta = screen.getByRole("checkbox", { name: /beta/i });
+    await user.click(alpha);
+    await user.click(beta);
+    expect(alpha).toBeChecked();
+    expect(beta).toBeChecked();
+  });
+
+  it("scores the exact set: selecting both correct options passes the challenge", async () => {
+    seedComplete();
+    const user = userEvent.setup();
+    await renderApp(<BossChallengeScreen />, {
+      route: "/challenge/time",
+      path: "challenge/$trackId",
+      content: multiSelectContent,
+    });
+    await user.click(screen.getByRole("button", { name: /start challenge/i }));
+
+    await user.click(screen.getByRole("checkbox", { name: /alpha/i }));
+    await user.click(screen.getByRole("checkbox", { name: /gamma/i }));
+    await user.click(screen.getByRole("button", { name: /finish/i }));
+
+    expect(screen.getByText(/challenge complete/i)).toBeInTheDocument();
+    expect(screen.getByText("1 / 1")).toBeInTheDocument();
+  });
+
+  it("does not award a pass for a partial selection", async () => {
+    seedComplete();
+    const user = userEvent.setup();
+    await renderApp(<BossChallengeScreen />, {
+      route: "/challenge/time",
+      path: "challenge/$trackId",
+      content: multiSelectContent,
+    });
+    await user.click(screen.getByRole("button", { name: /start challenge/i }));
+
+    await user.click(screen.getByRole("checkbox", { name: /alpha/i }));
+    await user.click(screen.getByRole("button", { name: /finish/i }));
+
+    expect(screen.getByText(/challenge complete/i)).toBeInTheDocument();
+    expect(screen.getByText("0 / 1")).toBeInTheDocument();
+  });
+
+  it("does not show per-question feedback in the challenge", async () => {
+    seedComplete();
+    const user = userEvent.setup();
+    await renderApp(<BossChallengeScreen />, {
+      route: "/challenge/time",
+      path: "challenge/$trackId",
+      content: multiSelectContent,
+    });
+    await user.click(screen.getByRole("button", { name: /start challenge/i }));
+    await user.click(screen.getByRole("checkbox", { name: /alpha/i }));
+    await user.click(screen.getByRole("button", { name: /finish/i }));
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

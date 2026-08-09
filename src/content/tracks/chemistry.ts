@@ -200,7 +200,7 @@ const elementsIntroLesson: Lesson = {
     },
     {
       id: "el-p4",
-      type: "mcq",
+      type: "multiSelect",
       prompt: [
         t("Which of the following are elements? (Select all that apply.)"),
       ],
@@ -217,7 +217,7 @@ const elementsIntroLesson: Lesson = {
         { id: "d", label: [t("Air")] },
         { id: "e", label: [t("Salt")] },
       ],
-      correctOptionId: "c",
+      correctOptionIds: ["b", "c"],
     },
     {
       id: "el-p5",

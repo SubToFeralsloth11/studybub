@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import { RichBlocks } from "../../../components/RichBlocks";
+import { OptionCard } from "./OptionCard";
 
 import type { McqQuestion } from "../../../domain/content/types";
 
@@ -16,25 +16,21 @@ interface McqInputProps {
 }
 
 /**
- * Decides the visual state class for an option once the answer is revealed.
+ * Decides the reveal feedback state for an option once the answer is revealed.
  *
  * @param optionId - The option being styled.
  * @param question - The MCQ, for the correct option id.
  * @param selectedId - The learner's selection.
- * @returns Tailwind classes for the option's revealed state.
+ * @returns The reveal state, or undefined when not revealed.
  */
-function revealedClasses(
+function revealStateOf(
   optionId: string,
   question: McqQuestion,
   selectedId: string | null,
-): string {
-  if (optionId === question.correctOptionId) {
-    return "ring-success bg-success-soft text-ink";
-  }
-  if (optionId === selectedId) {
-    return "ring-warn bg-warn-soft text-ink line-through decoration-warn/60";
-  }
-  return "ring-hairline opacity-60";
+) {
+  if (optionId === question.correctOptionId) return "correct" as const;
+  if (optionId === selectedId) return "wrong-selected" as const;
+  return "dimmed" as const;
 }
 
 /**
@@ -60,33 +56,28 @@ export function McqInput({
       <legend className="sr-only">Choose the correct answer</legend>
       {question.options.map((option) => {
         const isSelected = option.id === selectedId;
-        const stateClasses = revealed
-          ? revealedClasses(option.id, question, selectedId)
-          : isSelected
-            ? "ring-brand bg-brand-soft text-ink"
-            : "ring-hairline hover:ring-brand/40";
         return (
-          <label
+          <OptionCard
             key={option.id}
-            className={`flex cursor-pointer items-center gap-3 rounded-bub bg-card px-5 py-4 text-lg ring-2 transition ${stateClasses} ${revealed ? "cursor-default" : ""}`}
-          >
-            <input
-              type="radio"
-              name={groupName}
-              value={option.id}
-              checked={isSelected}
-              onChange={() => onSelect(option.id)}
-              className="size-5 accent-brand"
-            />
-            <span className="flex-1">
-              <RichBlocks blocks={option.label} />
-            </span>
-            {revealed && option.id === question.correctOptionId ? (
-              <span aria-hidden className="text-success">
-                ✓
-              </span>
-            ) : null}
-          </label>
+            option={option}
+            selected={isSelected}
+            revealed={revealed}
+            revealState={
+              revealed
+                ? revealStateOf(option.id, question, selectedId)
+                : undefined
+            }
+            control={
+              <input
+                type="radio"
+                name={groupName}
+                value={option.id}
+                checked={isSelected}
+                onChange={() => onSelect(option.id)}
+                className="size-5 accent-brand"
+              />
+            }
+          />
         );
       })}
     </fieldset>

@@ -69,6 +69,12 @@ function pickUnused(poolSize: number, recentlyUsed: number[]): number {
   return Math.floor(Math.random() * poolSize);
 }
 
+/**
+ * The arcade game screen: an action-based play surface that drops practice
+ * questions on the learner during play.
+ *
+ * @returns The rendered game screen.
+ */
 export function GameScreen() {
   const { track } = useTrackFromRoute();
   const { dispatch: progressDispatch } = useProgress();

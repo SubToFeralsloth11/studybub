@@ -124,7 +124,8 @@ function makePair(id: string, left: string, right: string): MatchingPair {
     left: [{ kind: "text", text: left }],
     right: [{ kind: "text", text: right }],
   };
-}describe("shuffleMatchingPairs", () => {
+}
+describe("shuffleMatchingPairs", () => {
   it("returns the same number of pairs as the input", () => {
     const input: MatchingPair[] = [
       makePair("p1", "A", "X"),

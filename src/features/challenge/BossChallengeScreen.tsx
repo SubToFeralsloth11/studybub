@@ -7,6 +7,7 @@ import { ConfettiBurst } from "../../components/ConfettiBurst";
 import { Figure } from "../../components/Figure";
 import { NotFound } from "../../components/NotFound";
 import { RichBlocks } from "../../components/RichBlocks";
+import { toggleOptionId } from "../../domain/content/selection";
 import { markAnswer } from "../../domain/marking/markAnswer";
 import { localDateIso } from "../../domain/progress/dates";
 import { isBossUnlocked } from "../../domain/progress/unlock";
@@ -17,6 +18,7 @@ import { ExpressionInput } from "../lesson/inputs/ExpressionInput";
 import { FillInTheBlankInput } from "../lesson/inputs/FillInTheBlankInput";
 import { MatchingInput } from "../lesson/inputs/MatchingInput";
 import { McqInput } from "../lesson/inputs/McqInput";
+import { MultiSelectInput } from "../lesson/inputs/MultiSelectInput";
 import { NumericInput } from "../lesson/inputs/NumericInput";
 import { ShortTextInput } from "../lesson/inputs/ShortTextInput";
 
@@ -48,6 +50,7 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [value, setValue] = useState("");
 
   // Clear any stale celebration so the result screen reflects only this run.
@@ -59,12 +62,25 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
   const question = questions[index];
   const total = questions.length;
   const hasAnswer =
-    question?.type === "mcq" ? selectedId !== null : value.trim() !== "";
+    question?.type === "mcq"
+      ? selectedId !== null
+      : question?.type === "multiSelect"
+        ? selectedIds.length > 0
+        : value.trim() !== "";
+
+  function toggleSelectedIds(optionId: string) {
+    setSelectedIds((current) => toggleOptionId(current, optionId));
+  }
 
   async function handleSubmit(matchInput?: string) {
     if (!hasAnswer && !matchInput) return;
     const input =
-      matchInput ?? (question.type === "mcq" ? (selectedId ?? "") : value);
+      matchInput ??
+      (question.type === "mcq"
+        ? (selectedId ?? "")
+        : question.type === "multiSelect"
+          ? selectedIds
+          : value);
     const result = await markAnswer(question, input, {
       aiConfig: aiConfig ?? undefined,
     });
@@ -85,6 +101,7 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
     }
     setIndex(index + 1);
     setSelectedId(null);
+    setSelectedIds([]);
     setValue("");
   }
 
@@ -194,6 +211,13 @@ function ChallengeRunner({ track, challenge }: Readonly<ChallengeRunnerProps>) {
               question={question}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              revealed={false}
+            />
+          ) : question.type === "multiSelect" ? (
+            <MultiSelectInput
+              question={question}
+              selectedIds={selectedIds}
+              onToggle={toggleSelectedIds}
               revealed={false}
             />
           ) : question.type === "expression" ? (

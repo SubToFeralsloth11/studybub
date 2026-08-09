@@ -7,7 +7,9 @@ import type { MultiSelectQuestion } from "../content/types";
 const question: MultiSelectQuestion = {
   id: "q1",
   type: "multiSelect",
-  prompt: [{ kind: "text", text: "Which are elements? (Select all that apply.)" }],
+  prompt: [
+    { kind: "text", text: "Which are elements? (Select all that apply.)" },
+  ],
   explanation: [{ kind: "text", text: "Carbon and gold are elements." }],
   xp: 10,
   options: [

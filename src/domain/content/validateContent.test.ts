@@ -7,6 +7,7 @@ import type {
   Badge,
   Lesson,
   McqQuestion,
+  MultiSelectQuestion,
   Question,
   Subject,
   Track,
@@ -885,11 +886,15 @@ describe("validateContent - refersTo learn-card link", () => {
 
 // --- T006: multiSelect question validation ---
 
-function multiSelectQuestion(overrides?: Partial<Question>): Question {
+function multiSelectQuestion(
+  overrides?: Partial<MultiSelectQuestion>,
+): MultiSelectQuestion {
   return {
     id: "ms1",
     type: "multiSelect",
-    prompt: [{ kind: "text", text: "Which are elements? (Select all that apply.)" }],
+    prompt: [
+      { kind: "text", text: "Which are elements? (Select all that apply.)" },
+    ],
     explanation: [{ kind: "text", text: "Carbon and gold are elements." }],
     xp: 10,
     options: [
@@ -953,7 +958,9 @@ describe("validateContent - multiSelect question validation", () => {
   });
 
   it("rejects a multiSelect question with fewer than 2 correct option ids", () => {
-    const question = multiSelectQuestion({ correctOptionIds: ["b"] }) as Question;
+    const question = multiSelectQuestion({
+      correctOptionIds: ["b"],
+    }) as Question;
     expect(validateContent(contentWithPractice(question)).join("\n")).toMatch(
       /at least 2 correct option ids/,
     );
