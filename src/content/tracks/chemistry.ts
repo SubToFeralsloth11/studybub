@@ -200,7 +200,7 @@ const elementsIntroLesson: Lesson = {
     },
     {
       id: "el-p4",
-      type: "mcq",
+      type: "multiSelect",
       prompt: [
         t("Which of the following are elements? (Select all that apply.)"),
       ],
@@ -217,7 +217,7 @@ const elementsIntroLesson: Lesson = {
         { id: "d", label: [t("Air")] },
         { id: "e", label: [t("Salt")] },
       ],
-      correctOptionId: "c",
+      correctOptionIds: ["b", "c"],
     },
     {
       id: "el-p5",
@@ -528,7 +528,7 @@ const atomsSymbolsLesson: Lesson = {
     },
     {
       id: "as-p5",
-      type: "mcq",
+      type: "multiSelect",
       prompt: [
         t("Select TWO properties that distinguish metals from non-metals."),
       ],
@@ -545,7 +545,7 @@ const atomsSymbolsLesson: Lesson = {
         { id: "d", label: [t("Brittle solid")] },
         { id: "e", label: [t("Poor conductor of heat")] },
       ],
-      correctOptionId: "c",
+      correctOptionIds: ["a", "c"],
     },
     {
       id: "as-p6",

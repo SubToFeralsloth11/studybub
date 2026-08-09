@@ -10,9 +10,10 @@ import {
   fisherYatesShuffle,
   shuffleMcqOptions,
   shuffleMatchingPairs,
+  shuffleMultiSelectOptions,
 } from "./shuffleOptions";
 
-import type { MatchingPair, McqQuestion } from "./types";
+import type { MatchingPair, McqQuestion, MultiSelectQuestion } from "./types";
 
 /** A deterministic "random" that cycles through a fixed sequence. */
 function sequenceRandom(values: number[]): () => number {
@@ -124,7 +125,6 @@ function makePair(id: string, left: string, right: string): MatchingPair {
     right: [{ kind: "text", text: right }],
   };
 }
-
 describe("shuffleMatchingPairs", () => {
   it("returns the same number of pairs as the input", () => {
     const input: MatchingPair[] = [
@@ -202,5 +202,56 @@ describe("shuffleMatchingPairs", () => {
     const firstIds = first.map((p) => p.id);
     const secondIds = second.map((p) => p.id);
     expect(firstIds).toEqual(secondIds);
+  });
+});
+
+describe("shuffleMultiSelectOptions", () => {
+  function makeMultiSelect(options: string[]): MultiSelectQuestion {
+    return {
+      id: "q1",
+      type: "multiSelect",
+      prompt: [{ kind: "text", text: "Pick all that apply" }],
+      options: options.map((id) => ({
+        id,
+        label: [{ kind: "text", text: `Option ${id}` }],
+      })),
+      correctOptionIds: [options[0], options[1]],
+      explanation: [{ kind: "text", text: "Because." }],
+      xp: 10,
+    };
+  }
+
+  it("does not mutate the original question", () => {
+    const q = makeMultiSelect(["a", "b", "c", "d"]);
+    const originalOptions = q.options;
+    shuffleMultiSelectOptions(q, () => 0);
+    expect(q.options).toBe(originalOptions);
+    expect(q.options[0].id).toBe("a");
+  });
+
+  it("preserves the correct option ids after shuffling", () => {
+    const q = makeMultiSelect(["a", "b", "c", "d"]);
+    const shuffled = shuffleMultiSelectOptions(q, () => 0);
+    expect(shuffled.correctOptionIds).toEqual(["a", "b"]);
+    // The options are shuffled but the correct ids still resolve to options.
+    const shuffledIds = shuffled.options.map((o) => o.id).toSorted();
+    expect(shuffledIds).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("returns options in a different order with a seeded random", () => {
+    const q = makeMultiSelect(["a", "b", "c", "d"]);
+    const shuffled = shuffleMultiSelectOptions(
+      q,
+      sequenceRandom([0.1, 0.2, 0.3]),
+    );
+    // A deterministic sequence that produces a non-identity permutation.
+    expect(shuffled.options.map((o) => o.id).join(",")).toBe("b,c,d,a");
+  });
+
+  it("returns all the same option ids", () => {
+    const q = makeMultiSelect(["a", "b", "c", "d"]);
+    const shuffled = shuffleMultiSelectOptions(q);
+    const ids = shuffled.options.map((o) => o.id).toSorted();
+    expect(ids).toEqual(["a", "b", "c", "d"]);
   });
 });

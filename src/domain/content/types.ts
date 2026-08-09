@@ -141,9 +141,19 @@ export interface MatchingQuestion extends QuestionBase {
   pairs: MatchingPair[];
 }
 
+/** A "select all that apply" question with two or more correct options. */
+export interface MultiSelectQuestion extends QuestionBase {
+  type: "multiSelect";
+  /** Between two and five options. */
+  options: McqOption[];
+  /** The ids of the correct options; 2 to (options.length - 1) entries. */
+  correctOptionIds: string[];
+}
+
 /** The discriminated union of all question variants. */
 export type Question =
   | McqQuestion
+  | MultiSelectQuestion
   | NumericQuestion
   | ExpressionQuestion
   | ShortTextQuestion

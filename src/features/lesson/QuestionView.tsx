@@ -5,16 +5,25 @@ import { ExpressionInput } from "./inputs/ExpressionInput";
 import { FillInTheBlankInput } from "./inputs/FillInTheBlankInput";
 import { MatchingInput } from "./inputs/MatchingInput";
 import { McqInput } from "./inputs/McqInput";
+import { MultiSelectInput } from "./inputs/MultiSelectInput";
 import { NumericInput } from "./inputs/NumericInput";
 import { ShortTextInput } from "./inputs/ShortTextInput";
 import { Button } from "../../components/Button";
 import { Figure } from "../../components/Figure";
 import { RichBlocks } from "../../components/RichBlocks";
-import { shuffleMcqOptions } from "../../domain/content/shuffleOptions";
+import { toggleOptionId } from "../../domain/content/selection";
+import {
+  shuffleMcqOptions,
+  shuffleMultiSelectOptions,
+} from "../../domain/content/shuffleOptions";
 import { markAnswer } from "../../domain/marking/markAnswer";
 import { useAiConfig } from "../../state/aiConfigContext";
 
-import type { McqQuestion, Question } from "../../domain/content/types";
+import type {
+  McqQuestion,
+  MultiSelectQuestion,
+  Question,
+} from "../../domain/content/types";
 import type { MarkResult } from "../../domain/marking/markResult";
 
 interface QuestionViewProps {
@@ -48,6 +57,7 @@ export function QuestionView({
 }: Readonly<QuestionViewProps>) {
   const { aiConfig } = useAiConfig();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(false);
   const [result, setResult] = useState<MarkResult | null>(null);
@@ -56,17 +66,26 @@ export function QuestionView({
 
   // Shuffle MCQ options so the correct answer is not always the first option.
   // The shuffle is memoised to avoid re-shuffling on every render.
-  const displayedQuestion = useMemo(
-    () => (question.type === "mcq" ? shuffleMcqOptions(question) : question),
-    [question],
-  );
+  const displayedQuestion = useMemo(() => {
+    if (question.type === "mcq") return shuffleMcqOptions(question);
+    if (question.type === "multiSelect") {
+      return shuffleMultiSelectOptions(question);
+    }
+    return question;
+  }, [question]);
 
   const hasAnswer =
     question.type === "mcq"
       ? selectedId !== null
-      : question.type === "matching"
-        ? false // matching handles its own submit
-        : value.trim() !== "";
+      : question.type === "multiSelect"
+        ? selectedIds.length > 0
+        : question.type === "matching"
+          ? false // matching handles its own submit
+          : value.trim() !== "";
+
+  function toggleSelectedIds(optionId: string) {
+    setSelectedIds((current) => toggleOptionId(current, optionId));
+  }
 
   const handleCheck = useCallback(
     async (input?: string) => {
@@ -79,7 +98,12 @@ export function QuestionView({
       }
 
       const answer =
-        input ?? (question.type === "mcq" ? (selectedId ?? "") : value);
+        input ??
+        (question.type === "mcq"
+          ? (selectedId ?? "")
+          : question.type === "multiSelect"
+            ? selectedIds
+            : value);
 
       // Only short-text questions use AI marking.
       if (question.type === "shortText") {
@@ -128,6 +152,7 @@ export function QuestionView({
       loading,
       question,
       selectedId,
+      selectedIds,
       value,
       aiConfig,
       onAnswered,
@@ -166,6 +191,13 @@ export function QuestionView({
           question={displayedQuestion as McqQuestion}
           selectedId={selectedId}
           onSelect={setSelectedId}
+          revealed={checked}
+        />
+      ) : question.type === "multiSelect" ? (
+        <MultiSelectInput
+          question={displayedQuestion as MultiSelectQuestion}
+          selectedIds={selectedIds}
+          onToggle={toggleSelectedIds}
           revealed={checked}
         />
       ) : question.type === "expression" ? (

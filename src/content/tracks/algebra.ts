@@ -2114,18 +2114,18 @@ const zeroIndexAndPower: Lesson = {
     {
       id: "5k-m3",
       refersTo: "5k-key",
-      type: "mcq",
+      type: "multiSelect",
       prompt: [
-        t("Which expression is equal to 1 for all"),
+        t("Which expressions are equal to 1 for all"),
         m(String.raw`x \neq 0`),
-        t("?"),
+        t("? (Select all that apply.)"),
       ],
       explanation: [
         t(
-          "x⁰ = 1 for any non-zero x. (x²)⁰ also equals 1 (power of a power: x²ˣ⁰ = x⁰ = 1). So both options a and b equal 1. The question asks which single expression is equal to 1 — x⁰ is the simplest.",
+          "x⁰ = 1 for any non-zero x. (x²)⁰ also equals 1 (power of a power: x²ˣ⁰ = x⁰ = 1), and 1^x = 1 for every x. So options a, b and d all equal 1 for x ≠ 0.",
         ),
         t(
-          "Let me clarify: all of x⁰, (x²)⁰, (5x)⁰, and (x⁷)⁰ equal 1 for x ≠ 0. However, x⁰ is the most direct form of the zero index law.",
+          "Only 0^x is not 1: for x ≠ 0, 0 raised to any positive power is 0. The zero index law says any non-zero base raised to the power 0 equals 1.",
         ),
       ],
       xp: 15,
@@ -2135,7 +2135,7 @@ const zeroIndexAndPower: Lesson = {
         { id: "c", label: [m("0^x")] },
         { id: "d", label: [m("1^x")] },
       ],
-      correctOptionId: "a",
+      correctOptionIds: ["a", "b", "d"],
     },
     {
       id: "5k-m4",

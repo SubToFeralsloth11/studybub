@@ -30,6 +30,8 @@ import { timeFigures } from "./tracks/time";
 import { volumeFigures } from "./tracks/volume";
 import { validateContent } from "../domain/content/validateContent";
 
+import type { MultiSelectQuestion } from "../domain/content/types";
+
 // Collects every figure id referenced anywhere in the authored content.
 function referencedFigureIds(): Set<string> {
   const ids = new Set<string>();
@@ -136,5 +138,48 @@ describe("authored content", () => {
 
   it("findSubjectForTrack returns undefined for unknown track", () => {
     expect(findSubjectForTrack("nope")).toBeUndefined();
+  });
+});
+
+describe("authored content - multiselect", () => {
+  it("ships the elements question as a valid multiSelect question", () => {
+    const lesson = findLesson("chemistry", "elements-intro")!;
+    const elP4 = [...lesson.practice, ...lesson.mastery].find(
+      (q) => q.id === "el-p4",
+    );
+    expect(elP4).toBeDefined();
+    expect(elP4!.type).toBe("multiSelect");
+    const multi = elP4 as MultiSelectQuestion;
+    expect(multi.correctOptionIds).toEqual(["b", "c"]);
+    // The shipped content validates with the multiSelect question in place.
+    expect(validateContent(appContent)).toEqual([]);
+  });
+
+  it("ships the metals question as a two-answer multiSelect question", () => {
+    const chemistry = findTrack("chemistry")!;
+    const all = chemistry.lessons.flatMap((lesson) => [
+      ...lesson.practice,
+      ...lesson.mastery,
+    ]);
+    const asP5 = all.find((q) => q.id === "as-p5");
+    expect(asP5).toBeDefined();
+    expect(asP5!.type).toBe("multiSelect");
+    const multi = asP5 as MultiSelectQuestion;
+    expect(multi.correctOptionIds).toEqual(["a", "c"]);
+    expect(validateContent(appContent)).toEqual([]);
+  });
+
+  it("ships the zero-index question as a three-answer multiSelect question", () => {
+    const algebra = findTrack("algebra")!;
+    const all = algebra.lessons.flatMap((lesson) => [
+      ...lesson.practice,
+      ...lesson.mastery,
+    ]);
+    const q5kM3 = all.find((q) => q.id === "5k-m3");
+    expect(q5kM3).toBeDefined();
+    expect(q5kM3!.type).toBe("multiSelect");
+    const multi = q5kM3 as MultiSelectQuestion;
+    expect(multi.correctOptionIds).toEqual(["a", "b", "d"]);
+    expect(validateContent(appContent)).toEqual([]);
   });
 });
