@@ -32,9 +32,8 @@ function openDatabase(path?: string): Database {
 
 /**
  * Initialises the database schema. This mirrors the `initSchema` function
- * in `src/server/db.ts` so the CLI tool can create tables without importing
+ * in `src/server/db.server.ts` so the CLI tool can create tables without importing
  * server modules.
- *
  * @param db - The database instance.
  */
 function initSchema(db: Database): void {
@@ -74,6 +73,75 @@ function initSchema(db: Database): void {
   db.run(`
     CREATE INDEX IF NOT EXISTS idx_invite_tokens_user_id
     ON invite_tokens(user_id)
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS notification_configurations (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      topic_ciphertext TEXT NOT NULL,
+      topic_iv TEXT NOT NULL,
+      topic_auth_tag TEXT NOT NULL,
+      reminder_time TEXT NOT NULL,
+      timezone TEXT NOT NULL,
+      activated_at TEXT NOT NULL,
+      tested_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS notification_test_proofs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      topic_ciphertext TEXT NOT NULL,
+      topic_iv TEXT NOT NULL,
+      topic_auth_tag TEXT NOT NULL,
+      reminder_time TEXT NOT NULL,
+      timezone TEXT NOT NULL,
+      succeeded_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS notification_deliveries (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES notification_configurations(user_id) ON DELETE CASCADE,
+      logical_key TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      streak_count INTEGER NOT NULL,
+      local_date TEXT NOT NULL,
+      timezone TEXT NOT NULL,
+      status TEXT NOT NULL,
+      attempt_count INTEGER NOT NULL DEFAULT 0,
+      next_attempt_at TEXT NOT NULL,
+      claim_until TEXT,
+      expires_at TEXT NOT NULL,
+      last_attempt_at TEXT,
+      completed_at TEXT,
+      last_result_code TEXT,
+      ntfy_message_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(user_id, logical_key)
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_notification_test_proofs_user_expiry
+    ON notification_test_proofs(user_id, expires_at)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_notification_deliveries_claim
+    ON notification_deliveries(status, next_attempt_at)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_notification_deliveries_user_status
+    ON notification_deliveries(user_id, completed_at DESC)
   `);
 }
 

@@ -54,6 +54,11 @@ import {
   type SavedState,
 } from "../../domain/persistence/schema";
 import { getDatabase, initSchema, resetDatabase } from "../db.server";
+import { resetEncryptionKey } from "../encryption.server";
+import {
+  createTestProof,
+  saveNotificationConfigurationFromProof,
+} from "../notificationRepository.server";
 import { loadProgress, resetProgress, saveProgress } from "./progress";
 
 const TEST_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -393,5 +398,359 @@ describe("progress handlers", () => {
     await expect(
       saveProgress({ data: { state: defaultState() } }),
     ).rejects.toThrow("Sign in required.");
+  });
+
+  it("saveProgress rejects invalid state payload", async () => {
+    const invalidStates: unknown[] = [
+      null,
+      undefined,
+      {},
+      { version: 1 },
+      { ...defaultState(), xp: -10 },
+      { ...defaultState(), xp: "not-a-number" },
+      { ...defaultState(), version: 999 },
+      { ...defaultState(), streak: null },
+      { ...defaultState(), streak: { count: "invalid" } },
+      { ...defaultState(), activeDates: "not-an-array" },
+      { ...defaultState(), activeDates: [123] },
+      { ...defaultState(), badges: [456] },
+      {
+        ...defaultState(),
+        lessons: { "lesson-1": { completed: "not-bool" } },
+      },
+      {
+        ...defaultState(),
+        challenges: { "challenge-1": { bestScore: "invalid" } },
+      },
+    ];
+
+    for (const invalid of invalidStates) {
+      await expect(
+        saveProgress({ data: { state: invalid as SavedState } }),
+      ).rejects.toThrow("Invalid progress state.");
+    }
+  });
+});
+
+describe("saveProgress milestone notifications (T030)", () => {
+  let originalSecret: string | undefined;
+  let originalKey: string | undefined;
+  let db: Database;
+
+  beforeEach(() => {
+    originalSecret = process.env.SESSION_SECRET;
+    originalKey = process.env.ENCRYPTION_KEY;
+    process.env.SESSION_SECRET = "s".repeat(40);
+    process.env.ENCRYPTION_KEY =
+      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    resetEncryptionKey();
+    session.data = { userId: TEST_USER_ID };
+    db = setupDb();
+  });
+
+  afterEach(() => {
+    resetDatabase();
+    if (originalSecret === undefined) {
+      delete process.env.SESSION_SECRET;
+    } else {
+      process.env.SESSION_SECRET = originalSecret;
+    }
+    if (originalKey === undefined) {
+      delete process.env.ENCRYPTION_KEY;
+    } else {
+      process.env.ENCRYPTION_KEY = originalKey;
+    }
+  });
+
+  async function seedActiveConfig(timezone = "UTC") {
+    const now = new Date("2026-08-20T10:00:00Z");
+    const proofId = await createTestProof(db, {
+      userId: TEST_USER_ID,
+      topic: "test-topic",
+      reminderTime: "19:00",
+      timezone,
+      now,
+    });
+    await saveNotificationConfigurationFromProof(
+      db,
+      proofId,
+      TEST_USER_ID,
+      now,
+    );
+  }
+
+  it("enqueues milestone delivery when streak count advances to threshold with active configuration", async () => {
+    await seedActiveConfig("UTC");
+
+    // Initial state: streak 2, active 2026-08-21
+    const initialState: SavedState = {
+      ...defaultState(),
+      streak: { count: 2, lastActiveDate: "2026-08-21" },
+      activeDates: ["2026-08-20", "2026-08-21"],
+      xp: 50,
+    };
+    db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+      JSON.stringify(initialState),
+      TEST_USER_ID,
+    ]);
+
+    // Advance to streak 3, active 2026-08-22 with qualifying activity (xp + activeDates)
+    const newState: SavedState = {
+      ...defaultState(),
+      streak: { count: 3, lastActiveDate: "2026-08-22" },
+      activeDates: ["2026-08-20", "2026-08-21", "2026-08-22"],
+      xp: 60,
+    };
+
+    const res = await saveProgress({ data: { state: newState } });
+    expect(res).toEqual({ ok: true });
+    // Verify delivery was enqueued
+    const deliveries = db
+      .query("SELECT * FROM notification_deliveries WHERE user_id = ?")
+      .all(TEST_USER_ID) as Array<{
+      kind: string;
+      streak_count: number;
+      local_date: string;
+      timezone: string;
+      status: string;
+      logical_key: string;
+      expires_at: string;
+    }>;
+
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0].kind).toBe("milestone");
+    expect(deliveries[0].streak_count).toBe(3);
+    expect(deliveries[0].status).toBe("pending");
+    expect(deliveries[0].logical_key).toBe("milestone:2026-08-22:3");
+  });
+
+  it("does not enqueue milestone delivery if user has no active notification configuration", async () => {
+    // No active notification configuration
+    const initialState: SavedState = {
+      ...defaultState(),
+      streak: { count: 2, lastActiveDate: "2026-08-21" },
+      xp: 50,
+      activeDates: ["2026-08-21"],
+    };
+    db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+      JSON.stringify(initialState),
+      TEST_USER_ID,
+    ]);
+
+    const newState: SavedState = {
+      ...defaultState(),
+      streak: { count: 3, lastActiveDate: "2026-08-22" },
+      xp: 60,
+      activeDates: ["2026-08-21", "2026-08-22"],
+    };
+
+    await saveProgress({ data: { state: newState } });
+
+    const deliveries = db
+      .query("SELECT * FROM notification_deliveries WHERE user_id = ?")
+      .all(TEST_USER_ID);
+    expect(deliveries).toHaveLength(0);
+  });
+
+  it("enqueues milestone for every milestone threshold: 3, 7, 14, 30, 50, 100, 200, 300", async () => {
+    await seedActiveConfig("UTC");
+
+    const thresholds = [3, 7, 14, 30, 50, 100, 200, 300];
+
+    let day = 1;
+    for (const threshold of thresholds) {
+      const prevDay = day++;
+      const nextDay = day++;
+      const prevDateStr = `2026-08-${String(prevDay).padStart(2, "0")}`;
+      const nextDateStr = `2026-08-${String(nextDay).padStart(2, "0")}`;
+
+      // Set old count to threshold - 1
+      const oldState: SavedState = {
+        ...defaultState(),
+        streak: { count: threshold - 1, lastActiveDate: prevDateStr },
+        xp: 100,
+        activeDates: [prevDateStr],
+      };
+      db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+        JSON.stringify(oldState),
+        TEST_USER_ID,
+      ]);
+
+      const newState: SavedState = {
+        ...defaultState(),
+        streak: { count: threshold, lastActiveDate: nextDateStr },
+        xp: 110,
+        activeDates: [prevDateStr, nextDateStr],
+      };
+      await saveProgress({ data: { state: newState } });
+      const delivery = db
+        .query(
+          "SELECT * FROM notification_deliveries WHERE user_id = ? AND streak_count = ?",
+        )
+        .get(TEST_USER_ID, threshold) as {
+        kind: string;
+        streak_count: number;
+      } | null;
+
+      expect(delivery).not.toBeNull();
+      expect(delivery!.kind).toBe("milestone");
+      expect(delivery!.streak_count).toBe(threshold);
+    }
+  });
+
+  it("does not enqueue milestone delivery for non-threshold streak counts (e.g. 2, 4, 15, 101, 199)", async () => {
+    await seedActiveConfig("UTC");
+
+    const nonThresholds = [
+      { old: 1, next: 2 },
+      { old: 3, next: 4 },
+      { old: 14, next: 15 },
+      { old: 100, next: 101 },
+      { old: 198, next: 199 },
+    ];
+
+    for (const { old, next } of nonThresholds) {
+      const oldState: SavedState = {
+        ...defaultState(),
+        streak: { count: old, lastActiveDate: "2026-08-21" },
+        xp: 100,
+        activeDates: ["2026-08-21"],
+      };
+      db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+        JSON.stringify(oldState),
+        TEST_USER_ID,
+      ]);
+
+      const newState: SavedState = {
+        ...defaultState(),
+        streak: { count: next, lastActiveDate: "2026-08-22" },
+        xp: 110,
+        activeDates: ["2026-08-21", "2026-08-22"],
+      };
+
+      await saveProgress({ data: { state: newState } });
+      const delivery = db
+        .query(
+          "SELECT * FROM notification_deliveries WHERE user_id = ? AND streak_count = ?",
+        )
+        .get(TEST_USER_ID, next);
+
+      expect(delivery).toBeNull();
+    }
+  });
+
+  it("does not enqueue duplicate milestone for same-day writes when streak does not advance", async () => {
+    await seedActiveConfig("UTC");
+
+    // Seed initial streak 2 with active date
+    const initialState: SavedState = {
+      ...defaultState(),
+      streak: { count: 2, lastActiveDate: "2026-08-21" },
+      activeDates: ["2026-08-21"],
+      xp: 50,
+    };
+    db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+      JSON.stringify(initialState),
+      TEST_USER_ID,
+    ]);
+    // Advance to 3 with qualifying activity
+    const state1: SavedState = {
+      ...defaultState(),
+      streak: { count: 3, lastActiveDate: "2026-08-22" },
+      activeDates: ["2026-08-21", "2026-08-22"],
+      xp: 100,
+    };
+    await saveProgress({ data: { state: state1 } });
+
+    let count = db
+      .query(
+        "SELECT COUNT(*) as cnt FROM notification_deliveries WHERE user_id = ?",
+      )
+      .get(TEST_USER_ID) as { cnt: number };
+    expect(count.cnt).toBe(1);
+
+    // Same day activity: XP increases, but streak count stays 3
+    const state2: SavedState = {
+      ...defaultState(),
+      streak: { count: 3, lastActiveDate: "2026-08-22" },
+      xp: 150,
+    };
+    await saveProgress({ data: { state: state2 } });
+
+    count = db
+      .query(
+        "SELECT COUNT(*) as cnt FROM notification_deliveries WHERE user_id = ?",
+      )
+      .get(TEST_USER_ID) as { cnt: number };
+    expect(count.cnt).toBe(1);
+  });
+  it("does not enqueue milestone if streak jumps by more than 1 or without qualifying activity", async () => {
+    await seedActiveConfig("UTC");
+
+    // Case A: Arbitrary jump from 0 to 3 with activity
+    const state0: SavedState = {
+      ...defaultState(),
+      streak: { count: 0, lastActiveDate: "" },
+      xp: 0,
+    };
+    db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+      JSON.stringify(state0),
+      TEST_USER_ID,
+    ]);
+
+    const stateJump: SavedState = {
+      ...defaultState(),
+      streak: { count: 3, lastActiveDate: "2026-08-22" },
+      xp: 50,
+      activeDates: ["2026-08-22"],
+    };
+    await saveProgress({ data: { state: stateJump } });
+
+    let deliveries = db
+      .query("SELECT * FROM notification_deliveries WHERE user_id = ?")
+      .all(TEST_USER_ID);
+    expect(deliveries).toHaveLength(0);
+
+    // Case B: Streak increments by 1 but NO qualifying activity occurred (XP, lessons, challenges, activeDates all unchanged)
+    const statePre2: SavedState = {
+      ...defaultState(),
+      streak: { count: 2, lastActiveDate: "2026-08-21" },
+      xp: 100,
+      activeDates: ["2026-08-21"],
+    };
+    db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+      JSON.stringify(statePre2),
+      TEST_USER_ID,
+    ]);
+
+    const state3NoActivity: SavedState = {
+      ...defaultState(),
+      streak: { count: 3, lastActiveDate: "2026-08-22" },
+      xp: 100,
+      activeDates: ["2026-08-21"], // No new date, no new xp, no new lessons
+    };
+    await saveProgress({ data: { state: state3NoActivity } });
+
+    deliveries = db
+      .query("SELECT * FROM notification_deliveries WHERE user_id = ?")
+      .all(TEST_USER_ID);
+    expect(deliveries).toHaveLength(0);
+  });
+
+  it("rolls back progress update if transaction fails", async () => {
+    await seedActiveConfig("UTC");
+
+    const initialState: SavedState = {
+      ...defaultState(),
+      streak: { count: 2, lastActiveDate: "2026-08-21" },
+      xp: 50,
+    };
+    db.run("UPDATE users SET progress_json = ? WHERE id = ?", [
+      JSON.stringify(initialState),
+      TEST_USER_ID,
+    ]);
+
+    const loaded = loadUserProgress(db, TEST_USER_ID);
+    expect(loaded.xp).toBe(50);
   });
 });

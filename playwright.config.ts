@@ -32,6 +32,9 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       VITE_BYPASS_AUTH: "true",
+      SESSION_SECRET: "e2e-session-secret-must-be-at-least-32-chars-long",
+      ENCRYPTION_KEY:
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     },
   },
 });

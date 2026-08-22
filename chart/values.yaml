@@ -23,6 +23,7 @@ studybub:
   config:
     NODE_ENV: "production"
     STUDYBUB_DB_PATH: "/data/studybub.db"
+    STUDYBUB_PUBLIC_URL: "https://studybub.syntaxrewrite.com"
 
   secretConfig: {}
   # secretConfig:
