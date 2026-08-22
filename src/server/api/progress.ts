@@ -44,7 +44,10 @@ export function isValidStreakAdvancement(
     return false;
   }
 
-  if (!newStreak.lastActiveDate || !ISO_DATE_REGEX.test(newStreak.lastActiveDate)) {
+  if (
+    !newStreak.lastActiveDate ||
+    !ISO_DATE_REGEX.test(newStreak.lastActiveDate)
+  ) {
     return false;
   }
 
