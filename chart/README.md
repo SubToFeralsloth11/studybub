@@ -39,25 +39,26 @@ kubectl port-forward -n studybub svc/studybub-studybub 3000:3000
 
 ## Configuration
 
-| Parameter                               | Description                  | Default                     |
-| --------------------------------------- | ---------------------------- | --------------------------- |
-| `studybub.image.repository`             | Container image repository   | `ghcr.io/studybub/studybub` |
-| `studybub.image.tag`                    | Container image tag          | `latest`                    |
-| `studybub.image.pullPolicy`             | Image pull policy            | `Always`                    |
-| `studybub.replicas`                     | Number of replicas           | `1`                         |
-| `studybub.resources.requests.memory`    | Memory request               | -                           |
-| `studybub.resources.requests.cpu`       | CPU request                  | -                           |
-| `studybub.resources.limits.memory`      | Memory limit                 | -                           |
-| `studybub.resources.limits.cpu`         | CPU limit                    | -                           |
-| `studybub.persistence.enabled`          | Enable PVC for SQLite        | `true`                      |
-| `studybub.persistence.size`             | PVC storage size             | `1Gi`                       |
-| `studybub.persistence.storageClassName` | Storage class name           | `null` (cluster default)    |
-| `studybub.config.NODE_ENV`              | Node environment             | `production`                |
-| `studybub.config.STUDYBUB_DB_PATH`      | SQLite database path         | `/data/studybub.db`         |
-| `studybub.secretConfig.ENCRYPTION_KEY`  | Encryption key for AI config | -                           |
-| `studybub.secretConfig.SESSION_SECRET`  | Session secret               | -                           |
-| `studybub.service.type`                 | Service type                 | `ClusterIP`                 |
-| `studybub.service.port`                 | Service port                 | `3000`                      |
+| Parameter                               | Description                                                   | Default                              |
+| --------------------------------------- | ------------------------------------------------------------- | ------------------------------------ |
+| `studybub.image.repository`             | Container image repository                                    | `ghcr.io/studybub/studybub`          |
+| `studybub.image.tag`                    | Container image tag                                           | `latest`                             |
+| `studybub.image.pullPolicy`             | Image pull policy                                             | `Always`                             |
+| `studybub.replicas`                     | Number of replicas                                            | `1`                                  |
+| `studybub.resources.requests.memory`    | Memory request                                                | -                                    |
+| `studybub.resources.requests.cpu`       | CPU request                                                   | -                                    |
+| `studybub.resources.limits.memory`      | Memory limit                                                  | -                                    |
+| `studybub.resources.limits.cpu`         | CPU limit                                                     | -                                    |
+| `studybub.persistence.enabled`          | Enable PVC for SQLite                                         | `true`                               |
+| `studybub.persistence.size`             | PVC storage size                                              | `1Gi`                                |
+| `studybub.persistence.storageClassName` | Storage class name                                            | `null` (cluster default)             |
+| `studybub.config.NODE_ENV`              | Node environment                                              | `production`                         |
+| `studybub.config.STUDYBUB_DB_PATH`      | SQLite database path                                          | `/data/studybub.db`                  |
+| `studybub.config.STUDYBUB_PUBLIC_URL`   | Public application URL for notification click actions         | `https://studybub.syntaxrewrite.com` |
+| `studybub.secretConfig.ENCRYPTION_KEY`  | 256-bit encryption key for AI configs and notification topics | -                                    |
+| `studybub.secretConfig.SESSION_SECRET`  | Session secret for signed cookies                             | -                                    |
+| `studybub.service.type`                 | Service type                                                  | `ClusterIP`                          |
+| `studybub.service.port`                 | Service port                                                  | `3000`                               |
 
 ## Examples
 

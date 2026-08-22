@@ -2,7 +2,11 @@
 
 import {
   decryptAiConfig,
+  decryptJson,
+  decryptText,
   encryptAiConfig,
+  encryptJson,
+  encryptText,
   resetEncryptionKey,
 } from "./encryption.server";
 
@@ -17,7 +21,125 @@ const sampleConfig: AiConfig = {
   model: "gpt-4o",
 };
 
-describe("encryptAiConfig", () => {
+describe("encryptText & decryptText (generic AES-GCM string encryption)", () => {
+  let originalKey: string | undefined;
+
+  beforeEach(() => {
+    originalKey = process.env.ENCRYPTION_KEY;
+    process.env.ENCRYPTION_KEY = VALID_KEY;
+    resetEncryptionKey();
+  });
+
+  afterEach(() => {
+    process.env.ENCRYPTION_KEY = originalKey;
+    resetEncryptionKey();
+  });
+
+  it("encrypts plaintext and decrypts back to original text", async () => {
+    const plaintext = "my-secret-ntfy-topic-123";
+    const encrypted = await encryptText(plaintext);
+
+    expect(typeof encrypted.ciphertext).toBe("string");
+    expect(typeof encrypted.iv).toBe("string");
+    expect(typeof encrypted.authTag).toBe("string");
+    expect(encrypted.iv).toHaveLength(24);
+    expect(encrypted.authTag).toHaveLength(32);
+
+    const decrypted = await decryptText(
+      encrypted.ciphertext,
+      encrypted.iv,
+      encrypted.authTag,
+    );
+    expect(decrypted).toBe(plaintext);
+  });
+
+  it("produces distinct ciphertexts and IVs on multiple encrypt calls for same text", async () => {
+    const text = "constant-text";
+    const enc1 = await encryptText(text);
+    const enc2 = await encryptText(text);
+
+    expect(enc1.iv).not.toBe(enc2.iv);
+    expect(enc1.ciphertext).not.toBe(enc2.ciphertext);
+  });
+
+  it("rejects corrupted ciphertext in decryptText", async () => {
+    const encrypted = await encryptText("hello world");
+    const tampered =
+      encrypted.ciphertext.slice(0, -2) +
+      (Number.parseInt(encrypted.ciphertext.slice(-2), 16) ^ 0xff)
+        .toString(16)
+        .padStart(2, "0");
+
+    await expect(
+      decryptText(tampered, encrypted.iv, encrypted.authTag),
+    ).rejects.toThrow("Decryption failed");
+  });
+
+  it("rejects corrupted authTag in decryptText", async () => {
+    const encrypted = await encryptText("hello world");
+    const tampered =
+      encrypted.authTag.slice(0, -2) +
+      (Number.parseInt(encrypted.authTag.slice(-2), 16) ^ 0xff)
+        .toString(16)
+        .padStart(2, "0");
+
+    await expect(
+      decryptText(encrypted.ciphertext, encrypted.iv, tampered),
+    ).rejects.toThrow("Decryption failed");
+  });
+
+  it("rejects corrupted IV in decryptText", async () => {
+    const encrypted = await encryptText("hello world");
+    const tampered =
+      encrypted.iv.slice(0, -2) +
+      (Number.parseInt(encrypted.iv.slice(-2), 16) ^ 0xff)
+        .toString(16)
+        .padStart(2, "0");
+
+    await expect(
+      decryptText(encrypted.ciphertext, tampered, encrypted.authTag),
+    ).rejects.toThrow("Decryption failed");
+  });
+});
+
+describe("encryptJson & decryptJson (generic AES-GCM typed JSON encryption)", () => {
+  let originalKey: string | undefined;
+
+  beforeEach(() => {
+    originalKey = process.env.ENCRYPTION_KEY;
+    process.env.ENCRYPTION_KEY = VALID_KEY;
+    resetEncryptionKey();
+  });
+
+  afterEach(() => {
+    process.env.ENCRYPTION_KEY = originalKey;
+    resetEncryptionKey();
+  });
+
+  it("round-trips complex JSON object", async () => {
+    interface ComplexPayload {
+      id: string;
+      tags: string[];
+      nested: { count: number; active: boolean };
+    }
+    const payload: ComplexPayload = {
+      id: "abc-123",
+      tags: ["alpha", "beta"],
+      nested: { count: 42, active: true },
+    };
+
+    const encrypted = await encryptJson(payload);
+    const decrypted = await decryptJson<ComplexPayload>(
+      encrypted.ciphertext,
+      encrypted.iv,
+      encrypted.authTag,
+    );
+
+    expect(decrypted).toEqual(payload);
+  });
+});
+
+describe("encryptAiConfig (backward compatibility)", () => {
   let originalKey: string | undefined;
 
   beforeEach(() => {
@@ -68,7 +190,7 @@ describe("encryptAiConfig", () => {
   });
 });
 
-describe("decryptAiConfig", () => {
+describe("decryptAiConfig (backward compatibility)", () => {
   let originalKey: string | undefined;
 
   beforeEach(() => {

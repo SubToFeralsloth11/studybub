@@ -1,6 +1,7 @@
 import {
   createContext,
   use,
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -179,7 +180,7 @@ export function ProgressProvider({
     persist();
   }, [state.saved, hydrated, isE2e]);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     if (isE2e) {
       const fresh = defaultState();
       localStorage.removeItem(PROGRESS_STORAGE_KEY);
@@ -199,11 +200,11 @@ export function ProgressProvider({
       dispatch({ type: "HYDRATE", saved: defaultState() });
       setSaveStatus("saved");
     }
-  };
+  }, [isE2e]);
 
   const value = useMemo<ProgressContextValue>(
     () => ({ state, dispatch, content, saveStatus, handleReset }),
-    [state, content, saveStatus],
+    [state, content, saveStatus, handleReset],
   );
 
   return <ProgressContext value={value}>{children}</ProgressContext>;

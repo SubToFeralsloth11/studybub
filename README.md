@@ -26,10 +26,11 @@ cp .env.example .env
 
 Required variables:
 
-| Variable         | Purpose                                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------ |
-| `ENCRYPTION_KEY` | 64 hex characters (32 bytes) for AES-256-GCM encryption of AI configs. Generate with `openssl rand -hex 32`. |
-| `SESSION_SECRET` | At least 32 random characters for signing session cookies. Generate with `openssl rand -hex 32`.             |
+| Variable              | Purpose                                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENCRYPTION_KEY`      | 64 hex characters (32 bytes) for AES-256-GCM encryption of AI configs and ntfy notification topics. Generate with `openssl rand -hex 32`.      |
+| `SESSION_SECRET`      | At least 32 random characters for signing session cookies. Generate with `openssl rand -hex 32`.                                               |
+| `STUDYBUB_PUBLIC_URL` | Absolute HTTP(S) origin used for notification click actions and production validation (defaults to `http://localhost:3000` in non-production). |
 
 Optional:
 
@@ -194,9 +195,10 @@ layer, with server-side persistence via TanStack Start server functions:
 - `src/state/` - React context providers for progress and AI config, backed
   by pure reducers that compose the domain functions. State is hydrated from
   and persisted to the server-side database.
-- `src/server/` - TanStack Start server functions (progress, auth, AI config),
-  the SQLite database layer, session management, WebAuthn integration, and
-  AES-256-GCM encryption for API keys.
+- `src/server/` - TanStack Start server functions (progress, auth, AI config,
+  notifications), the SQLite database layer, session management, WebAuthn
+  integration, background scheduler lifecycle plugin, and AES-256-GCM
+  encryption for API keys and notification topics.
 - `src/components/` and `src/features/` - shared presentational components and
   the screen components.
 - `src/routes/` - file-based TanStack Router route definitions.

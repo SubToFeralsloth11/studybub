@@ -134,6 +134,7 @@ if [ ! -f "$ENV_FILE" ]; then
 SESSION_SECRET=$SESSION_SECRET
 ENCRYPTION_KEY=$ENCRYPTION_KEY
 STUDYBUB_DB_PATH=$DATA_DIR/data.db
+STUDYBUB_PUBLIC_URL=https://$DOMAIN
 NODE_ENV=$NODE_ENV
 EOF
 
@@ -144,6 +145,7 @@ EOF
   echo "  SESSION_SECRET=${SESSION_SECRET:0:8}..."
   echo "  ENCRYPTION_KEY=${ENCRYPTION_KEY:0:8}..."
   echo "  STUDYBUB_DB_PATH=$DATA_DIR/data.db"
+  echo "  STUDYBUB_PUBLIC_URL=https://$DOMAIN"
   echo "  NODE_ENV=$NODE_ENV"
 else
   echo ".env file already exists at $ENV_FILE - skipping secret generation."

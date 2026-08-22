@@ -1,6 +1,7 @@
 /**
- * The AI marking settings screen at /settings. Provides a form to configure
- * the OpenAI-compatible API endpoint, key, and model.
+ * The settings screen at /settings. Provides forms to configure:
+ * 1. OpenAI-compatible API endpoint, key, and model for AI marking.
+ * 2. ntfy.sh topic, reminder time, and timezone for streak notifications.
  *
  * @module features/settings/SettingsScreen
  * @author John Grimes
@@ -8,6 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { NotificationSettingsSection } from "./NotificationSettingsSection";
 import { AppHeader } from "../../components/AppHeader";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -32,7 +34,7 @@ function getInitialValues(): {
 }
 
 /**
- * The settings form for AI marking configuration.
+ * The settings screen containing AI marking and Streak Notifications cards.
  *
  * @returns The rendered settings screen.
  */
@@ -138,7 +140,7 @@ export function SettingsScreen() {
           </div>
 
           <div className="mt-5 flex items-center gap-3">
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={handleSave}>Save AI Settings</Button>
             {saved ? (
               <span
                 role="status"
@@ -149,6 +151,8 @@ export function SettingsScreen() {
             ) : null}
           </div>
         </Card>
+
+        <NotificationSettingsSection />
       </main>
     </div>
   );

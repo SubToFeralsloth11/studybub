@@ -21,6 +21,7 @@ export default defineConfig({
     }),
     nitro({
       preset: "bun",
+      plugins: ["src/server/plugins/notificationScheduler.server.ts"],
     }),
     viteReact(),
   ],

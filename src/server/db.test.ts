@@ -61,12 +61,15 @@ describe("initSchema", () => {
     ).map((row) => row.name);
   }
 
-  it("creates the users, invite_tokens, and webauthn_credentials tables", () => {
+  it("creates the users, invite_tokens, webauthn_credentials, and notification tables", () => {
     initSchema(db);
     const tables = tableNames(db);
     expect(tables).toContain("users");
     expect(tables).toContain("invite_tokens");
     expect(tables).toContain("webauthn_credentials");
+    expect(tables).toContain("notification_configurations");
+    expect(tables).toContain("notification_test_proofs");
+    expect(tables).toContain("notification_deliveries");
   });
 
   it("is idempotent - calling initSchema twice succeeds", () => {
@@ -82,6 +85,19 @@ describe("initSchema", () => {
       )
       .all();
     expect(indexes).toHaveLength(1);
+  });
+
+  it("creates indexes for notification tables", () => {
+    initSchema(db);
+    const indexNames = (
+      db.query("SELECT name FROM sqlite_master WHERE type='index'").all() as {
+        name: string;
+      }[]
+    ).map((row) => row.name);
+
+    expect(indexNames).toContain("idx_notification_test_proofs_user_expiry");
+    expect(indexNames).toContain("idx_notification_deliveries_claim");
+    expect(indexNames).toContain("idx_notification_deliveries_user_status");
   });
 });
 
@@ -199,5 +215,346 @@ describe("CRUD on users table", () => {
       .query("SELECT progress_json FROM users WHERE id = ?")
       .get("user-1") as { progress_json: string } | null;
     expect(user!.progress_json).toBe("{}");
+  });
+});
+
+describe("Notification schema and cascade deletion", () => {
+  let db: Database;
+  const now = new Date().toISOString();
+
+  beforeEach(() => {
+    resetDatabase();
+    db = getDatabase(":memory:");
+    initSchema(db);
+    db.run(
+      "INSERT INTO users (id, display_name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+      ["user-1", "Learner", now, now],
+    );
+  });
+
+  afterEach(() => {
+    resetDatabase();
+  });
+
+  it("inserts and reads notification_configurations, notification_test_proofs, and notification_deliveries", () => {
+    db.run(
+      `INSERT INTO notification_configurations (
+        user_id, topic_ciphertext, topic_iv, topic_auth_tag,
+        reminder_time, timezone, activated_at, tested_at,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "user-1",
+        "cipher123",
+        "iv123",
+        "tag123",
+        "19:00",
+        "Australia/Sydney",
+        now,
+        now,
+        now,
+        now,
+      ],
+    );
+
+    db.run(
+      `INSERT INTO notification_test_proofs (
+        id, user_id, topic_ciphertext, topic_iv, topic_auth_tag,
+        reminder_time, timezone, succeeded_at, expires_at, consumed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "proof-1",
+        "user-1",
+        "cipher123",
+        "iv123",
+        "tag123",
+        "19:00",
+        "Australia/Sydney",
+        now,
+        now,
+        null,
+      ],
+    );
+
+    db.run(
+      `INSERT INTO notification_deliveries (
+        id, user_id, logical_key, kind, streak_count, local_date,
+        timezone, status, attempt_count, next_attempt_at, claim_until,
+        expires_at, last_attempt_at, completed_at, last_result_code,
+        ntfy_message_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "delivery-1",
+        "user-1",
+        "reminder:2026-08-22",
+        "reminder",
+        5,
+        "2026-08-22",
+        "Australia/Sydney",
+        "pending",
+        0,
+        now,
+        null,
+        now,
+        null,
+        null,
+        null,
+        null,
+        now,
+        now,
+      ],
+    );
+
+    const config = db
+      .query("SELECT * FROM notification_configurations WHERE user_id = ?")
+      .get("user-1") as Record<string, unknown> | null;
+    expect(config).not.toBeNull();
+    expect(config?.timezone).toBe("Australia/Sydney");
+    expect(config?.reminder_time).toBe("19:00");
+
+    const proof = db
+      .query("SELECT * FROM notification_test_proofs WHERE id = ?")
+      .get("proof-1") as Record<string, unknown> | null;
+    expect(proof).not.toBeNull();
+    expect(proof?.user_id).toBe("user-1");
+    expect(proof?.consumed_at).toBeNull();
+
+    const delivery = db
+      .query("SELECT * FROM notification_deliveries WHERE id = ?")
+      .get("delivery-1") as Record<string, unknown> | null;
+    expect(delivery).not.toBeNull();
+    expect(delivery?.logical_key).toBe("reminder:2026-08-22");
+    expect(delivery?.streak_count).toBe(5);
+  });
+
+  it("enforces UNIQUE(user_id, logical_key) on notification_deliveries", () => {
+    db.run(
+      `INSERT INTO notification_configurations (
+        user_id, topic_ciphertext, topic_iv, topic_auth_tag,
+        reminder_time, timezone, activated_at, tested_at,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "user-1",
+        "cipher123",
+        "iv123",
+        "tag123",
+        "19:00",
+        "Australia/Sydney",
+        now,
+        now,
+        now,
+        now,
+      ],
+    );
+
+    db.run(
+      `INSERT INTO notification_deliveries (
+        id, user_id, logical_key, kind, streak_count, local_date,
+        timezone, status, attempt_count, next_attempt_at, claim_until,
+        expires_at, last_attempt_at, completed_at, last_result_code,
+        ntfy_message_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "delivery-1",
+        "user-1",
+        "reminder:2026-08-22",
+        "reminder",
+        5,
+        "2026-08-22",
+        "Australia/Sydney",
+        "pending",
+        0,
+        now,
+        null,
+        now,
+        null,
+        null,
+        null,
+        null,
+        now,
+        now,
+      ],
+    );
+
+    expect(() => {
+      db.run(
+        `INSERT INTO notification_deliveries (
+          id, user_id, logical_key, kind, streak_count, local_date,
+          timezone, status, attempt_count, next_attempt_at, claim_until,
+          expires_at, last_attempt_at, completed_at, last_result_code,
+          ntfy_message_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "delivery-2",
+          "user-1",
+          "reminder:2026-08-22",
+          "reminder",
+          5,
+          "2026-08-22",
+          "Australia/Sydney",
+          "pending",
+          0,
+          now,
+          null,
+          now,
+          null,
+          null,
+          null,
+          null,
+          now,
+          now,
+        ],
+      );
+    }).toThrow();
+  });
+
+  it("cascades deletion from users to notification_configurations and notification_test_proofs", () => {
+    db.run(
+      `INSERT INTO notification_configurations (
+        user_id, topic_ciphertext, topic_iv, topic_auth_tag,
+        reminder_time, timezone, activated_at, tested_at,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "user-1",
+        "cipher123",
+        "iv123",
+        "tag123",
+        "19:00",
+        "Australia/Sydney",
+        now,
+        now,
+        now,
+        now,
+      ],
+    );
+
+    db.run(
+      `INSERT INTO notification_test_proofs (
+        id, user_id, topic_ciphertext, topic_iv, topic_auth_tag,
+        reminder_time, timezone, succeeded_at, expires_at, consumed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "proof-1",
+        "user-1",
+        "cipher123",
+        "iv123",
+        "tag123",
+        "19:00",
+        "Australia/Sydney",
+        now,
+        now,
+        null,
+      ],
+    );
+
+    db.run(
+      `INSERT INTO notification_deliveries (
+        id, user_id, logical_key, kind, streak_count, local_date,
+        timezone, status, attempt_count, next_attempt_at, claim_until,
+        expires_at, last_attempt_at, completed_at, last_result_code,
+        ntfy_message_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "delivery-1",
+        "user-1",
+        "reminder:2026-08-22",
+        "reminder",
+        5,
+        "2026-08-22",
+        "Australia/Sydney",
+        "pending",
+        0,
+        now,
+        null,
+        now,
+        null,
+        null,
+        null,
+        null,
+        now,
+        now,
+      ],
+    );
+
+    // Deleting the user should cascade delete configuration, test proofs, and deliveries.
+    db.run("DELETE FROM users WHERE id = ?", ["user-1"]);
+
+    const config = db
+      .query("SELECT * FROM notification_configurations WHERE user_id = ?")
+      .get("user-1");
+    expect(config).toBeNull();
+
+    const proof = db
+      .query("SELECT * FROM notification_test_proofs WHERE id = ?")
+      .get("proof-1");
+    expect(proof).toBeNull();
+
+    const delivery = db
+      .query("SELECT * FROM notification_deliveries WHERE id = ?")
+      .get("delivery-1");
+    expect(delivery).toBeNull();
+  });
+
+  it("cascades deletion from notification_configurations to notification_deliveries", () => {
+    db.run(
+      `INSERT INTO notification_configurations (
+        user_id, topic_ciphertext, topic_iv, topic_auth_tag,
+        reminder_time, timezone, activated_at, tested_at,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "user-1",
+        "cipher123",
+        "iv123",
+        "tag123",
+        "19:00",
+        "Australia/Sydney",
+        now,
+        now,
+        now,
+        now,
+      ],
+    );
+
+    db.run(
+      `INSERT INTO notification_deliveries (
+        id, user_id, logical_key, kind, streak_count, local_date,
+        timezone, status, attempt_count, next_attempt_at, claim_until,
+        expires_at, last_attempt_at, completed_at, last_result_code,
+        ntfy_message_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "delivery-1",
+        "user-1",
+        "reminder:2026-08-22",
+        "reminder",
+        5,
+        "2026-08-22",
+        "Australia/Sydney",
+        "pending",
+        0,
+        now,
+        null,
+        now,
+        null,
+        null,
+        null,
+        null,
+        now,
+        now,
+      ],
+    );
+
+    // Deleting notification_configuration should cascade delete deliveries.
+    db.run("DELETE FROM notification_configurations WHERE user_id = ?", [
+      "user-1",
+    ]);
+
+    const delivery = db
+      .query("SELECT * FROM notification_deliveries WHERE id = ?")
+      .get("delivery-1");
+    expect(delivery).toBeNull();
   });
 });

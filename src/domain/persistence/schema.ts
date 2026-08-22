@@ -125,7 +125,7 @@ function isRecordOf<T>(
  * @param value - The candidate value (typically freshly parsed JSON).
  * @returns True if the value is a valid current-version {@link SavedState}.
  */
-function isSavedState(value: unknown): value is SavedState {
+export function isSavedState(value: unknown): value is SavedState {
   if (typeof value !== "object" || value === null) return false;
   const record = value as Record<string, unknown>;
   const streak = record.streak as Record<string, unknown> | undefined;
